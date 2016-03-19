@@ -120,6 +120,8 @@ public class DefiniteAssignment {
 			return check((Stmt.For) stmt, environment);
 		} else if (stmt instanceof Stmt.While) {
 			return check((Stmt.While) stmt, environment);
+		} else if (stmt instanceof Stmt.DoWhile) {
+			return check((Stmt.DoWhile) stmt, environment);
 		} else if (stmt instanceof Stmt.Switch) {
 			return check((Stmt.Switch) stmt, environment);
 		} else {
@@ -199,6 +201,14 @@ public class DefiniteAssignment {
 	}
 
 	public ControlFlow check(Stmt.While stmt, Defs environment) {
+		check(stmt.getCondition(), environment);
+		//
+		check(stmt.getBody(), environment);
+		//
+		return new ControlFlow(environment,null);
+	}
+	
+	public ControlFlow check(Stmt.DoWhile stmt, Defs environment) {
 		check(stmt.getCondition(), environment);
 		//
 		check(stmt.getBody(), environment);

@@ -316,6 +316,88 @@ public interface Stmt extends SyntacticElement {
 			return body;
 		}
 	}
+	
+	/**
+	 * Represents a do-while statement whose body is made up from a block of
+	 * statements separated by curly braces. Note that, unlike C or Java, the
+	 * body must be contained within curly braces. As an example:
+	 * 
+	 * <pre>
+	 * bool allPositive(int[] items) {
+	 *   int i = 0;
+	 *   do {
+	 *     if(items[i] < 0) {
+	 *       return false;
+	 *     }
+	 *     i = i + 1;
+	 *   } while(i < |items|);
+	 *   return true;
+	 * }
+	 * </pre>
+	 * 
+	 * @author David J. Pearce
+	 * 
+	 */
+	public static final class DoWhile extends SyntacticElement.Impl implements Stmt {
+
+		private final Expr condition;
+		private final ArrayList<Stmt> body;
+
+		/**
+		 * Construct a Do-While statement from a given condition and body of
+		 * statements.
+		 * 
+		 * @param condition
+		 *            non-null expression.
+		 * @param body
+		 *            non-null collection which contains zero or more
+		 *            statements.
+		 * @param attributes
+		 */
+		public DoWhile(Expr condition, Collection<Stmt> body,
+				Attribute... attributes) {
+			super(attributes);
+			this.condition = condition;
+			this.body = new ArrayList<Stmt>(body);
+		}
+
+		/**
+		 * Construct a Do-While statement from a given condition and body of
+		 * statements.
+		 * 
+		 * @param condition
+		 *            non-null expression.
+		 * @param body
+		 *            non-null collection which contains zero or more
+		 *            statements.
+		 * @param attributes
+		 */
+		public DoWhile(Expr condition, Expr invariant, Collection<Stmt> body,
+				Collection<Attribute> attributes) {
+			super(attributes);
+			this.condition = condition;
+			this.body = new ArrayList<Stmt>(body);
+		}
+
+		/**
+		 * Get the condition which controls the while loop.
+		 * 
+		 * @return Guaranteed to be non-null.
+		 */
+		public Expr getCondition() {
+			return condition;
+		}
+
+		/**
+		 * Get the statements making up the loop body.
+		 * 
+		 * @return Guaranteed to be non-null.
+		 */
+		public List<Stmt> getBody() {
+			return body;
+		}
+	}
+
 
 	/**
 	 * Represents a classical for statement made up from a <i>variable

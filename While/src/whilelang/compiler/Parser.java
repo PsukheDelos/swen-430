@@ -183,6 +183,8 @@ public class Parser {
 			}
 		} else if (token.text.equals("if")) {
 			stmt = parseIfStmt();
+		} else if (token.text.equals("do")) {
+			stmt = parseDoWhileStmt();
 		} else if (token.text.equals("while")) {
 			stmt = parseWhileStmt();
 		} else if (token.text.equals("for")) {
@@ -397,6 +399,29 @@ public class Parser {
 		}
 		// Done.
 		return new Stmt.Return(e, sourceAttr(start, index - 1));
+	}
+	
+	/**
+	 * Parse a Do-While statement of the form:
+	 * 
+	 * <pre>
+	 * DoWhileStmt ::= 'do' '{' StmtBlock '}' 'while' '(' Expr ')' ';'
+	 * </pre>
+	 * 
+	 * @return
+	 */
+	private Stmt parseDoWhileStmt() {
+		int start = index;
+		matchKeyword("do");
+		List<Stmt> blk = parseStatementBlock();
+		matchKeyword("while");
+		match("(");
+		Expr condition = parseExpr();
+		match(")");
+		match(";");
+		int end = index;
+		
+		return new Stmt.DoWhile(condition, blk, sourceAttr(start, end - 1));
 	}
 
 	/**
