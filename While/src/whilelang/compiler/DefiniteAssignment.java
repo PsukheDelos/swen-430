@@ -97,6 +97,8 @@ public class DefiniteAssignment {
 	 *         or null if the method has terminated.
 	 */
 	public ControlFlow check(Stmt stmt, Defs environment) {
+		System.out.println("\ncheck: stmt: " + stmt.getClass() + " " + stmt.toString() 
+				+ "\nenv: " + environment.toString() + "\n");
 		if (stmt instanceof Stmt.Assert) {
 			return check((Stmt.Assert) stmt, environment);
 		} else if (stmt instanceof Stmt.Assign) {
@@ -201,6 +203,7 @@ public class DefiniteAssignment {
 	}
 
 	public ControlFlow check(Stmt.While stmt, Defs environment) {
+		
 		check(stmt.getCondition(), environment);
 		//
 		check(stmt.getBody(), environment);
@@ -209,11 +212,10 @@ public class DefiniteAssignment {
 	}
 	
 	public ControlFlow check(Stmt.DoWhile stmt, Defs environment) {
-		check(stmt.getCondition(), environment);
-		//
-		check(stmt.getBody(), environment);
-		//
-		return new ControlFlow(environment,null);
+		ControlFlow body = check(stmt.getBody(), environment);
+		Defs j = join(body.nextEnvironment, body.breakEnvironment);
+		check(stmt.getCondition(), j);
+		return new ControlFlow(j, null);
 	}
 	
 	public ControlFlow check(Stmt.Switch stmt, Defs environment) {
@@ -243,6 +245,7 @@ public class DefiniteAssignment {
 	 *            The set of variables which are definitely assigned.
 	 */
 	public void check(Expr expr, Defs environment) {
+//		System.out.println("Check Expr " + expr.toString());
 		if (expr instanceof Expr.Binary) {
 			check((Expr.Binary) expr, environment);
 		} else if (expr instanceof Expr.Constant) {
