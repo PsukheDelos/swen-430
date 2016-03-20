@@ -21,6 +21,7 @@ package whilelang.ast;
 import java.util.ArrayList;
 import java.util.List;
 
+import whilelang.compiler.Lexer.Identifier;
 import whilelang.util.SyntacticElement;
 
 public class WhileFile {
@@ -157,6 +158,46 @@ public class WhileFile {
 		public List<Stmt> getBody() {
 			return statements;
 		}
+	}
+	
+	public final static class MacroDecl extends SyntacticElement.Impl implements Decl {
+
+		private final String name;
+		private final ArrayList<Identifier> macroParameters;
+		private final Expr exp;
+		
+		/**
+		 * Construct an object representing a Whiley macro.
+		 * 
+		 * @param name
+		 *            - The name of the macro.
+		 * @param macroParameters
+		 *            - The list of macroParameter names for this macro
+		 * @param exp
+		 *            - The Expression for this macro
+		 */
+		public MacroDecl(String name, List<Identifier> macroParameters, Expr exp) {
+			this.name = name;
+			this.macroParameters = new ArrayList<Identifier>(macroParameters);
+			this.exp = exp;
+		}
+
+		public String name() {
+			return getName();
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public List<Identifier> getMacroParameters() {
+			return macroParameters;
+		}
+		
+		public Expr getExpr(){
+			return exp;
+		}
+
 	}
 
 	public static final class Parameter extends SyntacticElement.Impl implements Decl {
