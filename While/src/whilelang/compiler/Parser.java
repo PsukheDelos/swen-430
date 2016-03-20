@@ -59,6 +59,8 @@ public class Parser {
 				Keyword k = (Keyword) t;
 				if (t.text.equals("type")) {
 					decls.add(parseTypeDeclaration());
+				} else if (t.text.equals("macro")) {
+					decls.add(parseMacroDeclaration());
 				} else {
 					decls.add(parseMethodDeclaration());
 				}
@@ -105,6 +107,44 @@ public class Parser {
 	 * @return
 	 */
 	private WhileFile.MethodDecl parseMethodDeclaration() {
+		int start = index;
+
+		Type returnType = parseType();
+		Identifier name = matchIdentifier();
+
+		match("(");
+
+		// Now build up the parameter types
+		List<Parameter> paramTypes = new ArrayList<Parameter>();
+		boolean firstTime = true;
+		while (index < tokens.size() && !(tokens.get(index) instanceof RightBrace)) {
+			if (!firstTime) {
+				match(",");
+			}
+			firstTime = false;
+			int parameterStart = index;
+			Type parameterType = parseType();
+			Identifier parameterName = matchIdentifier();
+			paramTypes.add(new Parameter(parameterType, parameterName.text, sourceAttr(parameterStart, index - 1)));
+		}
+
+		match(")");
+		List<Stmt> stmts = parseStatementBlock();
+		return new WhileFile.MethodDecl(name.text, returnType, paramTypes, stmts, sourceAttr(start, index - 1));
+	}
+	
+	/**
+	 * Parse a macro, of the form:
+	 * 
+	 * <pre>
+	 * MacroDecl ::= macro Ident '(' MacroParameters ')' 'is' Expr
+	 * 
+	 * MacroParameters ::= [Ident (',' Ident)* ]
+	 * </pre>
+	 * 
+	 * @return
+	 */
+	private WhileFile.MethodDecl parseMacroDeclaration() {
 		int start = index;
 
 		Type returnType = parseType();
@@ -443,6 +483,8 @@ public class Parser {
 		List<Stmt> blk = parseStatementBlock();
 		return new Stmt.While(condition, blk, sourceAttr(start, end - 1));
 	}
+	
+	
 
 	/**
 	 * Parse a for statement, of the form:
