@@ -144,31 +144,29 @@ public class Parser {
 	 * 
 	 * @return
 	 */
-	private WhileFile.MethodDecl parseMacroDeclaration() {
+	private WhileFile.MacroDecl parseMacroDeclaration() {
 		int start = index;
-
-		Type returnType = parseType();
+		
+		matchKeyword("macro");
 		Identifier name = matchIdentifier();
-
 		match("(");
+		List<Identifier> macroParameters = new ArrayList<Identifier>();
 
-		// Now build up the parameter types
-		List<Parameter> paramTypes = new ArrayList<Parameter>();
+		// Now build up the macroparameters
 		boolean firstTime = true;
 		while (index < tokens.size() && !(tokens.get(index) instanceof RightBrace)) {
 			if (!firstTime) {
 				match(",");
 			}
 			firstTime = false;
-			int parameterStart = index;
-			Type parameterType = parseType();
 			Identifier parameterName = matchIdentifier();
-			paramTypes.add(new Parameter(parameterType, parameterName.text, sourceAttr(parameterStart, index - 1)));
+			macroParameters.add(parameterName);
 		}
-
 		match(")");
-		List<Stmt> stmts = parseStatementBlock();
-		return new WhileFile.MethodDecl(name.text, returnType, paramTypes, stmts, sourceAttr(start, index - 1));
+		match("is");
+		Expr exp = parseExpr();		System.err.println("hi");
+
+		return new WhileFile.MacroDecl(name.text, macroParameters, exp);
 	}
 
 	/**
