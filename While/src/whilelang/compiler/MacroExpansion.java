@@ -119,13 +119,13 @@ public class MacroExpansion {
 		} else if(stmt instanceof Stmt.Continue) {
 			// nothing to do
 		} else if(stmt instanceof Stmt.VariableDeclaration) {
-			check((Stmt.VariableDeclaration) stmt, environment);
+			return check((Stmt.VariableDeclaration) stmt, environment);
 		} else if(stmt instanceof Expr.Invoke) {
 //			check((Expr.Invoke) stmt, environment);
 		} else if(stmt instanceof Stmt.IfElse) {
 			return check((Stmt.IfElse) stmt, environment);
 		} else if(stmt instanceof Stmt.For) {
-			check((Stmt.For) stmt, environment);
+			return check((Stmt.For) stmt, environment);
 		} else if(stmt instanceof Stmt.While) {
 			return check((Stmt.While) stmt, environment);
 		} else if(stmt instanceof Stmt.DoWhile) {
@@ -148,10 +148,6 @@ public class MacroExpansion {
 	
 	public Stmt.Assign check(Stmt.Assign stmt, Map<String,Type> environment) {
 		return new Stmt.Assign((Expr.LVal)check(stmt.getLhs(),environment), check(stmt.getRhs(),environment), stmt.attributes());
-//		Type lhs = check(stmt.getLhs(),environment);
-//		Type rhs = check(stmt.getRhs(),environment);
-//		// Make sure the type being assigned is a subtype of the destination
-//		checkSubtype(lhs,rhs,stmt.getRhs());
 	}
 	
 	public Stmt.Print check(Stmt.Print stmt, Map<String,Type> environment) {
@@ -196,32 +192,12 @@ public class MacroExpansion {
 		return new Stmt.DoWhile(check(stmt.getCondition(),environment), check(stmt.getBody(),environment), this.AttributesAsArray(stmt.attributes()));
 	}
 	
-	public void check(Stmt.For stmt, Map<String,Type> environment) {
-//
-//		Stmt.VariableDeclaration vd = stmt.getDeclaration();
-//		check(vd,environment);
-//		
-//		// Clone the environment in order that the loop variable is only scoped
-//		// for the life of the loop itself.
-//		environment = new HashMap<String,Type>(environment);
-//		environment.put(vd.getName(), vd.getType());
-//		
-//		Type ct = check(stmt.getCondition(),environment);
-//		// Make sure condition has bool type
-//		checkInstanceOf(ct,stmt.getCondition(),Type.Bool.class);		
-//		check(stmt.getIncrement(),environment);
-//		check(stmt.getBody(),environment);
+	public Stmt.For check(Stmt.For stmt, Map<String,Type> environment) {
+		return new Stmt.For(check(stmt.getDeclaration(),environment), check(stmt.getCondition(),environment), check(stmt.getIncrement(),environment), check(stmt.getBody(),environment), stmt.attributes());
 	}
 	
-	public void check(Stmt.VariableDeclaration stmt, Map<String,Type> environment) {
-//		if(environment.containsKey(stmt.getName())) {
-//			syntaxError("variable already declared: " + stmt.getName(),
-//					file.filename, stmt);
-//		} else if(stmt.getExpr() != null) {
-//			Type type = check(stmt.getExpr(),environment);
-//			checkSubtype(stmt.getType(),type,stmt.getExpr());
-//		}
-//		environment.put(stmt.getName(), stmt.getType());
+	public Stmt.VariableDeclaration check(Stmt.VariableDeclaration stmt, Map<String,Type> environment) {
+		return new Stmt.VariableDeclaration(stmt.getType(), stmt.getName(), check(stmt.getExpr(),environment), stmt.attributes());
 	}
 	
 	public Expr check(Expr expr, Map<String,Type> environment) {
