@@ -130,7 +130,8 @@ public class Interpreter {
 		} else if(stmt instanceof Stmt.Print) {
 			return execute((Stmt.Print) stmt,frame);
 		} else if(stmt instanceof Expr.Invoke) {
-			return execute((Expr.Invoke) stmt,frame);
+			execute((Expr.Invoke) stmt,frame);
+		    return null; // Continue to the next statement
 		} else {
 			internalFailure("unknown statement encountered (" + stmt + ")", file.filename,stmt);
 			return null;
