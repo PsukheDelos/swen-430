@@ -45,7 +45,7 @@ public class WhileCompiler {
 		WhileFile ast = parser.read();
 		
 		// Second, expand macros
-		new MacroExpander().check(ast);
+		new MacroExpansion().check(ast);
 		
 		// Third, type checking
 		new TypeChecker().check(ast);
