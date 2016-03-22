@@ -243,7 +243,6 @@ public class MacroExpansion {
 	}
 	
 	public Expr check(Expr expr, Map<String,Type> environment) {
-//		System.err.println("expr:"+expr);
 		if(expr instanceof Expr.Invoke) {	
 			Expr.Invoke invoke = (Expr.Invoke) expr;
 			if(macros.keySet().contains(invoke.getName())){
@@ -252,9 +251,8 @@ public class MacroExpansion {
 				for (int i = 0; i < invoke.getArguments().size(); i++){
 					map.put(macros.get(invoke.getName()).getMacroParameters().get(i).text, invoke.getArguments().get(i));
 				}
-								
 				Expr e =  check(macros.get(invoke.getName()).getExpr(), environment);
-				System.err.println("class:"+e.getClass());
+				System.err.println(e.getClass());
 				if(e instanceof Expr.Binary){
 					Expr.Binary b = (Expr.Binary) e;
 					Expr lhs = b.getLhs();
@@ -273,6 +271,15 @@ public class MacroExpansion {
 					return new Expr.Binary(b.getOp(), lhs, rhs, b.attributes());
 				}else if (e instanceof Expr.Constant){
 					return e;
+				}else if (e instanceof Expr.Unary){
+					Expr.Unary u = (Expr.Unary) e;
+					Expr exp = u.getExpr();
+					if(exp instanceof Expr.Variable){
+						if(map.containsKey(((Expr.Variable) exp).getName())){
+							exp = map.get(((Expr.Variable) exp).getName());
+						}
+					}					
+					return new Expr.Unary(u.getOp(), check(exp,environment), this.AttributesAsArray(u.attributes()));
 				}	
 			}
 		} else if (expr instanceof Expr.Binary){
@@ -285,11 +292,7 @@ public class MacroExpansion {
 				exps.add(check(e,environment));
 			}
 			return new Expr.ArrayInitialiser(exps, this.AttributesAsArray(ai.attributes()));
-		} else if (expr instanceof Expr.Unary){
-			Expr.Unary u = (Expr.Unary) expr;
-			System.out.println("op:"+u.getOp());
-			return new Expr.Unary(u.getOp(), check(u.getExpr(),environment), this.AttributesAsArray(u.attributes()));
-		}
+		} 
 				
 //			return new Expr.Invoke(invoke.getName(), invoke.getArguments(), AttributesAsArray(invoke.attributes()));
 			
