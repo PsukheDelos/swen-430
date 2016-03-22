@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import whilelang.ast.*;
+import whilelang.ast.WhileFile.Decl;
 import whilelang.util.Pair;
 import whilelang.util.SyntacticElement;
 import static whilelang.util.SyntaxError.*;
@@ -48,12 +49,14 @@ public class MacroExpansion {
 	private HashMap<String,WhileFile.MacroDecl> macros; 
 
 	
-	public void check(WhileFile wf) {
+	public WhileFile check(WhileFile wf) {
 		this.file = wf;
+
 		this.methods = new HashMap<String,WhileFile.MethodDecl>();
 		this.types = new HashMap<String,WhileFile.TypeDecl>();
 		this.macros = new HashMap<String,WhileFile.MacroDecl>();
 
+		System.out.print("macros:"+macros.size());
 		
 		for(WhileFile.Decl declaration : wf.declarations) {
 			if(declaration instanceof WhileFile.MethodDecl) {
@@ -68,32 +71,46 @@ public class MacroExpansion {
 			}
 		}
 		
+		System.out.println("-"+macros.size()+":"+macros.keySet());
+		
+		ArrayList<WhileFile.Decl> decls = new ArrayList<WhileFile.Decl>();
+		
 		for(WhileFile.Decl declaration : wf.declarations) {
 			if(declaration instanceof WhileFile.MethodDecl) {
-				check((WhileFile.MethodDecl) declaration);
+				decls.add(check((WhileFile.MethodDecl) declaration));
+			}else{
+				decls.add(declaration);
 			}
 		}
+//		return wf;
+		return new WhileFile(wf.filename,decls);
 	}
 	
-	public void check(WhileFile.MethodDecl fd) {
+	public WhileFile.MethodDecl check(WhileFile.MethodDecl fd) {
 		this.method = fd;
 		// First, initialise the typing environment
 		HashMap<String,Type> environment = new HashMap<String,Type>();
 		for (WhileFile.Parameter p : fd.getParameters()) {
 			environment.put(p.name(), p.getType());
 		}
-		
-		// Second, check all statements in the function body
-		check(fd.getBody(),environment);				
+
+		Attribute[] att = new Attribute[fd.attributes().size()];
+		fd.attributes().toArray(att); // fill the array
+				
+//		return fd;
+		return new WhileFile.MethodDecl(fd.getName(), fd.getRet(), fd.getParameters(), check(fd.getBody(),environment), att);
 	}
 	
-	public void check(List<Stmt> statements, Map<String,Type> environment) {
+	public List<Stmt> check(List<Stmt> statements, Map<String,Type> environment) {
+		List<Stmt> expandedStatements = new ArrayList<Stmt>();
 		for(Stmt s : statements) {			
-			check(s,environment);
+			expandedStatements.add(check(s,environment));
 		}
+		return expandedStatements;
 	}
 	
-	public void check(Stmt stmt, Map<String,Type> environment) {	
+	public Stmt check(Stmt stmt, Map<String,Type> environment) {
+		System.out.println(stmt);
 		if(stmt instanceof Stmt.Assert) {
 			check((Stmt.Assert) stmt, environment);
 		} else if(stmt instanceof Stmt.Assign) {
@@ -101,7 +118,7 @@ public class MacroExpansion {
 		} else if(stmt instanceof Stmt.Print) {
 			check((Stmt.Print) stmt, environment);
 		} else if(stmt instanceof Stmt.Return) {
-			check((Stmt.Return) stmt, environment);
+			return check((Stmt.Return) stmt, environment);
 		} else if(stmt instanceof Stmt.Break) {
 			// nothing to do
 		} else if(stmt instanceof Stmt.Continue) {
@@ -123,31 +140,32 @@ public class MacroExpansion {
 		} else {
 			internalFailure("unknown statement encountered (" + stmt + ")", file.filename,stmt);
 		}
+		return stmt;
 	}
 	
 
 	public void check(Stmt.VariableDeclaration stmt, Map<String,Type> environment) {
-		if(environment.containsKey(stmt.getName())) {
-			syntaxError("variable already declared: " + stmt.getName(),
-					file.filename, stmt);
-		} else if(stmt.getExpr() != null) {
-			Type type = check(stmt.getExpr(),environment);
-			checkSubtype(stmt.getType(),type,stmt.getExpr());
-		}
-		environment.put(stmt.getName(), stmt.getType());
+//		if(environment.containsKey(stmt.getName())) {
+//			syntaxError("variable already declared: " + stmt.getName(),
+//					file.filename, stmt);
+//		} else if(stmt.getExpr() != null) {
+//			Type type = check(stmt.getExpr(),environment);
+//			checkSubtype(stmt.getType(),type,stmt.getExpr());
+//		}
+//		environment.put(stmt.getName(), stmt.getType());
 	}
 	
 	public void check(Stmt.Assert stmt, Map<String,Type> environment) {
-		Type t = check(stmt.getExpr(),environment);
-		checkInstanceOf(t,stmt.getExpr(),Type.Bool.class);
+//		Type t = check(stmt.getExpr(),environment);
+//		checkInstanceOf(t,stmt.getExpr(),Type.Bool.class);
 	}
 	
 	
 	public void check(Stmt.Assign stmt, Map<String,Type> environment) {
-		Type lhs = check(stmt.getLhs(),environment);
-		Type rhs = check(stmt.getRhs(),environment);
-		// Make sure the type being assigned is a subtype of the destination
-		checkSubtype(lhs,rhs,stmt.getRhs());
+//		Type lhs = check(stmt.getLhs(),environment);
+//		Type rhs = check(stmt.getRhs(),environment);
+//		// Make sure the type being assigned is a subtype of the destination
+//		checkSubtype(lhs,rhs,stmt.getRhs());
 	}
 	
 	public void check(Stmt.Print stmt, Map<String,Type> environment) {
@@ -155,141 +173,155 @@ public class MacroExpansion {
 		// For print statements, the right hand side can have any type.
 	}
 	
-	public void check(Stmt.Return stmt, Map<String, Type> environment) {
+	public Stmt.Return check(Stmt.Return stmt, Map<String, Type> environment) {
 		if(stmt.getExpr() != null) {
-			Type ret = check(stmt.getExpr(),environment);
-			// Make sure returned value is subtype of enclosing method's return
-			// type 
-			checkSubtype(method.getRet(),ret,stmt.getExpr());
-		} else {
-			// Make sure return type is instance of Void
-			checkInstanceOf(method.getRet(),stmt,Type.Void.class);
+			return new Stmt.Return(check(stmt.getExpr(),environment), stmt.attributes());
 		}
+		return stmt;
+		
+//		if(stmt.getExpr() != null) {
+//			Type ret = check(stmt.getExpr(),environment);
+//			// Make sure returned value is subtype of enclosing method's return
+//			// type 
+//			checkSubtype(method.getRet(),ret,stmt.getExpr());
+//		} else {
+//			// Make sure return type is instance of Void
+//			checkInstanceOf(method.getRet(),stmt,Type.Void.class);
+//		}
 	}
 	
 	public void check(Stmt.IfElse stmt, Map<String,Type> environment) {
-		Type ct = check(stmt.getCondition(),environment);
-		// Make sure condition has bool type
-		checkInstanceOf(ct,stmt.getCondition(),Type.Bool.class);
-		check(stmt.getTrueBranch(),environment);
-		check(stmt.getFalseBranch(),environment);
+//		Type ct = check(stmt.getCondition(),environment);
+//		// Make sure condition has bool type
+//		checkInstanceOf(ct,stmt.getCondition(),Type.Bool.class);
+//		check(stmt.getTrueBranch(),environment);
+//		check(stmt.getFalseBranch(),environment);
 	}
 	
 	public void check(Stmt.For stmt, Map<String,Type> environment) {
-
-		Stmt.VariableDeclaration vd = stmt.getDeclaration();
-		check(vd,environment);
-		
-		// Clone the environment in order that the loop variable is only scoped
-		// for the life of the loop itself.
-		environment = new HashMap<String,Type>(environment);
-		environment.put(vd.getName(), vd.getType());
-		
-		Type ct = check(stmt.getCondition(),environment);
-		// Make sure condition has bool type
-		checkInstanceOf(ct,stmt.getCondition(),Type.Bool.class);		
-		check(stmt.getIncrement(),environment);
-		check(stmt.getBody(),environment);
+//
+//		Stmt.VariableDeclaration vd = stmt.getDeclaration();
+//		check(vd,environment);
+//		
+//		// Clone the environment in order that the loop variable is only scoped
+//		// for the life of the loop itself.
+//		environment = new HashMap<String,Type>(environment);
+//		environment.put(vd.getName(), vd.getType());
+//		
+//		Type ct = check(stmt.getCondition(),environment);
+//		// Make sure condition has bool type
+//		checkInstanceOf(ct,stmt.getCondition(),Type.Bool.class);		
+//		check(stmt.getIncrement(),environment);
+//		check(stmt.getBody(),environment);
 	}
 	
 	public void check(Stmt.While stmt, Map<String,Type> environment) {
-		Type ct = check(stmt.getCondition(),environment);
-		// Make sure condition has bool type
-		checkInstanceOf(ct,stmt.getCondition(),Type.Bool.class);
-		check(stmt.getBody(),environment);
+//		Type ct = check(stmt.getCondition(),environment);
+//		// Make sure condition has bool type
+//		checkInstanceOf(ct,stmt.getCondition(),Type.Bool.class);
+//		check(stmt.getBody(),environment);
 	}
 	
 	public void check(Stmt.DoWhile stmt, Map<String,Type> environment) {
-		Type ct = check(stmt.getCondition(),environment);
-		// Make sure condition has bool type
-		checkInstanceOf(ct,stmt.getCondition(),Type.Bool.class);
-		check(stmt.getBody(),environment);
+//		Type ct = check(stmt.getCondition(),environment);
+//		// Make sure condition has bool type
+//		checkInstanceOf(ct,stmt.getCondition(),Type.Bool.class);
+//		check(stmt.getBody(),environment);
 	}
 	
 	public void check(Stmt.Switch stmt, Map<String,Type> environment) {
-		Type ct = check(stmt.getExpr(),environment);
-		// Now, check each case individually
-		for(Stmt.Case c : stmt.getCases()) {
-			if(!c.isDefault()) {
-				Type et = check(c.getValue(),environment);
-				checkSubtype(ct,et,c.getValue());
-			}
-			check(c.getBody(),environment);
-		}
+//		Type ct = check(stmt.getExpr(),environment);
+//		// Now, check each case individually
+//		for(Stmt.Case c : stmt.getCases()) {
+//			if(!c.isDefault()) {
+//				Type et = check(c.getValue(),environment);
+//				checkSubtype(ct,et,c.getValue());
+//			}
+//			check(c.getBody(),environment);
+//		}
 	}
 	
-	public Type check(Expr expr, Map<String,Type> environment) {
-		Type type;
-		
+	public Expr check(Expr expr, Map<String,Type> environment) {
 		if(expr instanceof Expr.Binary) {
-			type = check((Expr.Binary) expr, environment);
+//			check((Expr.Binary) expr, environment);
 		} else if(expr instanceof Expr.Constant) {
-			type = check((Expr.Constant) expr, environment);
+//			check((Expr.Constant) expr, environment);
 		} else if(expr instanceof Expr.IndexOf) {
-			type = check((Expr.IndexOf) expr, environment);
+//			check((Expr.IndexOf) expr, environment);
 		} else if(expr instanceof Expr.Invoke) {
-			type = check((Expr.Invoke) expr, environment);
+//			check((Expr.Invoke) expr, environment);
+			
+			Expr.Invoke invoke = (Expr.Invoke) expr;
+			if(macros.keySet().contains(invoke.getName())){
+				return macros.get(invoke.getName()).getExpr();
+//				System.out.println(macros.get(invoke.getName()).getMacroParameters().get(0).text);
+//				Expr.Invoke m = (Expr.Invoke)macros.get(invoke.getName()).getExpr();
+//				System.out.println(m.getArguments().get(0);
+//				return m;
+			}
+			
 		} else if(expr instanceof Expr.ArrayGenerator) {
-			type = check((Expr.ArrayGenerator) expr, environment);
+//			check((Expr.ArrayGenerator) expr, environment);
 		} else if(expr instanceof Expr.ArrayInitialiser) {
-			type = check((Expr.ArrayInitialiser) expr, environment);
+//			check((Expr.ArrayInitialiser) expr, environment);
 		} else if(expr instanceof Expr.RecordAccess) {
-			type = check((Expr.RecordAccess) expr, environment);
+//			check((Expr.RecordAccess) expr, environment);
 		} else if(expr instanceof Expr.RecordConstructor) {
-			type = check((Expr.RecordConstructor) expr, environment);
+//			check((Expr.RecordConstructor) expr, environment);
 		} else if(expr instanceof Expr.Unary) {
-			type = check((Expr.Unary) expr, environment);
+//			check((Expr.Unary) expr, environment);
 		} else if(expr instanceof Expr.Variable) {
-			type = check((Expr.Variable) expr, environment);
+//			check((Expr.Variable) expr, environment);
 		} else {
 			internalFailure("unknown expression encountered (" + expr + ")", file.filename,expr);
 			return null; // dead code
 		} 
+//		
+//		// Save the type attribute so that subsequent compiler stages can use it
+//		// without having to recalculate it from scratch.
+//		expr.attributes().add(new Attribute.Type(type));
 		
-		// Save the type attribute so that subsequent compiler stages can use it
-		// without having to recalculate it from scratch.
-		expr.attributes().add(new Attribute.Type(type));
-		
-		return type;
+		return expr;
 	}
 	
 	public Type check(Expr.Binary expr, Map<String,Type> environment) {
-		Type leftType = check(expr.getLhs(), environment);
-		Type rightType = check(expr.getRhs(), environment);
-	
-		switch(expr.getOp()) {		
-		case AND:
-		case OR:
-			// Check arguments have bool type
-			checkInstanceOf(leftType,expr.getLhs(),Type.Bool.class);
-			checkInstanceOf(rightType,expr.getRhs(),Type.Bool.class);
-			return leftType;			
-		case ADD:
-		case SUB:
-		case DIV:
-		case MUL:
-		case REM:
-			// Check arguments have int type
-			checkInstanceOf(leftType,expr.getLhs(),Type.Int.class);
-			checkInstanceOf(rightType,expr.getRhs(),Type.Int.class);
-			return leftType;
-		case EQ:
-		case NEQ:			
-			// FIXME: we could do better here by making sure one of the
-			// arguments is a subtype of the other.
-			return new Type.Bool();
-		case LT:
-		case LTEQ:
-		case GT:
-		case GTEQ:
-			// Chewck arguments have int type
-			checkInstanceOf(leftType,expr.getLhs(),Type.Int.class);
-			checkInstanceOf(rightType,expr.getRhs(),Type.Int.class);
-			return new Type.Bool();		
-		default:
-			internalFailure("unknown unary expression encountered (" + expr + ")", file.filename,expr);
-			return null; // dead code
-		}		
+		return null;
+//		Type leftType = check(expr.getLhs(), environment);
+//		Type rightType = check(expr.getRhs(), environment);
+//	
+//		switch(expr.getOp()) {		
+//		case AND:
+//		case OR:
+//			// Check arguments have bool type
+//			checkInstanceOf(leftType,expr.getLhs(),Type.Bool.class);
+//			checkInstanceOf(rightType,expr.getRhs(),Type.Bool.class);
+//			return leftType;			
+//		case ADD:
+//		case SUB:
+//		case DIV:
+//		case MUL:
+//		case REM:
+//			// Check arguments have int type
+//			checkInstanceOf(leftType,expr.getLhs(),Type.Int.class);
+//			checkInstanceOf(rightType,expr.getRhs(),Type.Int.class);
+//			return leftType;
+//		case EQ:
+//		case NEQ:			
+//			// FIXME: we could do better here by making sure one of the
+//			// arguments is a subtype of the other.
+//			return new Type.Bool();
+//		case LT:
+//		case LTEQ:
+//		case GT:
+//		case GTEQ:
+//			// Chewck arguments have int type
+//			checkInstanceOf(leftType,expr.getLhs(),Type.Int.class);
+//			checkInstanceOf(rightType,expr.getRhs(),Type.Int.class);
+//			return new Type.Bool();		
+//		default:
+//			internalFailure("unknown unary expression encountered (" + expr + ")", file.filename,expr);
+//			return null; // dead code
+//		}		
 	}
 	
 	public Type check(Expr.Constant expr, Map<String,Type> environment) {
@@ -297,95 +329,110 @@ public class MacroExpansion {
 	}
 	
 	public Type check(Expr.IndexOf expr, Map<String, Type> environment) {
-		Type srcType = check(expr.getSource(), environment);
-		Type indexType = check(expr.getIndex(), environment);
-		// Make sure index has integer type
-		checkInstanceOf(indexType, expr.getIndex(), Type.Int.class);
-		// Check src has array type (of some kind)
-		srcType = checkInstanceOf(srcType, expr.getSource(), Type.Array.class,
-				Type.Strung.class);
-		return ((Type.Array) srcType).getElement();
+//		Type srcType = check(expr.getSource(), environment);
+//		Type indexType = check(expr.getIndex(), environment);
+//		// Make sure index has integer type
+//		checkInstanceOf(indexType, expr.getIndex(), Type.Int.class);
+//		// Check src has array type (of some kind)
+//		srcType = checkInstanceOf(srcType, expr.getSource(), Type.Array.class,
+//				Type.Strung.class);
+//		return ((Type.Array) srcType).getElement();
+		return null;
 	}
 	
 	public Type check(Expr.Invoke expr, Map<String,Type> environment) {
-		System.out.println(expr);
-		WhileFile.MethodDecl fn = methods.get(expr.getName());
-		List<Expr> arguments = expr.getArguments();
-		List<WhileFile.Parameter> parameters = fn.getParameters();
-		if(arguments.size() != parameters.size()) {
-			syntaxError("incorrect number of arguments to function",
-					file.filename, expr);
-		}
-		for(int i=0;i!=parameters.size();++i) {
-			Type argument = check(arguments.get(i),environment);
-			Type parameter = parameters.get(i).getType();
-			// Check supplied argument is subtype of declared parameter
-			checkSubtype(parameter,argument,arguments.get(i));
-		}
-		return fn.getRet();
+		
+//		if(macros.keySet().contains(expr.getName())){
+//			expr = macros.get(expr.getName()).getExpr();
+////			System.out.println(macros.get(expr.getName()).getExpr());
+//		}
+//		
+		WhileFile.MacroDecl mn = macros.get(expr.getName());
+		
+//		System.out.println(expr.getName());
+//		System.out.println(mn);
+//		WhileFile.MethodDecl fn = methods.get(expr.getName());
+//		List<Expr> arguments = expr.getArguments();
+//		List<WhileFile.Parameter> parameters = fn.getParameters();
+//		if(arguments.size() != parameters.size()) {
+//			syntaxError("incorrect number of arguments to function",
+//					file.filename, expr);
+//		}
+//		
+//		for(int i=0;i!=parameters.size();++i) {
+//			Type argument = check(arguments.get(i),environment);
+//			Type parameter = parameters.get(i).getType();
+//			// Check supplied argument is subtype of declared parameter
+//			checkSubtype(parameter,argument,arguments.get(i));
+//		}
+		return null;
 	}
 	
 	public Type check(Expr.ArrayGenerator expr, Map<String, Type> environment) {
-		Type element = check(expr.getValue(), environment);
-		Type size = check(expr.getSize(), environment);
-		// Check size expression has int type
-		checkInstanceOf(size,expr.getSize(),Type.Int.class);
-		return new Type.Array(element);
+		return null;
+//		Type element = check(expr.getValue(), environment);
+//		Type size = check(expr.getSize(), environment);
+//		// Check size expression has int type
+//		checkInstanceOf(size,expr.getSize(),Type.Int.class);
+//		return new Type.Array(element);
 	}
 	
 	public Type check(Expr.ArrayInitialiser expr, Map<String, Type> environment) {
-		ArrayList<Type> types = new ArrayList<Type>();
-		List<Expr> arguments = expr.getArguments();
-		for (Expr argument : arguments) {
-			types.add(check(argument, environment));
-		}
-		// Compute Least Upper Bound of element Types
-		Type lub = leastUpperBound(types,expr);
-		return new Type.Array(lub);
+		return null;
+		//		ArrayList<Type> types = new ArrayList<Type>();
+//		List<Expr> arguments = expr.getArguments();
+//		for (Expr argument : arguments) {
+//			types.add(check(argument, environment));
+//		}
+//		// Compute Least Upper Bound of element Types
+//		Type lub = leastUpperBound(types,expr);
+//		return new Type.Array(lub);
 	}
 	
 	public Type check(Expr.RecordAccess expr, Map<String, Type> environment) {
-		Type srcType = check(expr.getSource(), environment);
-		// Check src has record type
-		Type.Record recordType = (Type.Record) checkInstanceOf(srcType, expr.getSource(), Type.Record.class);
-		for (Pair<Type, String> field : recordType.getFields()) {
-			if (field.second().equals(expr.getName())) {
-				return field.first();
-			}
-		}
-		// Couldn't find the field!
-		syntaxError("expected type to contain field: " + expr.getName(), file.filename, expr);
+//		Type srcType = check(expr.getSource(), environment);
+//		// Check src has record type
+//		Type.Record recordType = (Type.Record) checkInstanceOf(srcType, expr.getSource(), Type.Record.class);
+//		for (Pair<Type, String> field : recordType.getFields()) {
+//			if (field.second().equals(expr.getName())) {
+//				return field.first();
+//			}
+//		}
+//		// Couldn't find the field!
+//		syntaxError("expected type to contain field: " + expr.getName(), file.filename, expr);
 		return null; // deadcode
 	}
 	
 	public Type check(Expr.RecordConstructor expr, Map<String, Type> environment) {
-		List<Pair<String, Expr>> arguments = expr.getFields();
-		List<Pair<Type, String>> types = new ArrayList<Pair<Type, String>>();
-
-		for (Pair<String, Expr> p : arguments) {
-			Type t = check(p.second(), environment);
-			types.add(new Pair<Type, String>(t, p.first()));
-		}
-
-		return new Type.Record(types);
+		return null;
+//		List<Pair<String, Expr>> arguments = expr.getFields();
+//		List<Pair<Type, String>> types = new ArrayList<Pair<Type, String>>();
+//
+//		for (Pair<String, Expr> p : arguments) {
+//			Type t = check(p.second(), environment);
+//			types.add(new Pair<Type, String>(t, p.first()));
+//		}
+//
+//		return new Type.Record(types);
 	}
 	
 	public Type check(Expr.Unary expr, Map<String,Type> environment) {
-		Type type = check(expr.getExpr(), environment);
-		switch(expr.getOp()) {
-		case NEG:
-			checkInstanceOf(type,expr.getExpr(),Type.Int.class);			
-			return type;
-		case NOT:
-			checkInstanceOf(type,expr.getExpr(),Type.Bool.class);
-			return type;			
-		case LENGTHOF:
-			checkInstanceOf(type,expr.getExpr(),Type.Array.class,Type.Strung.class);
-			return new Type.Int();
-		default:
-			internalFailure("unknown unary expression encountered (" + expr + ")", file.filename,expr);
-			return null; // dead code
-		}
+		return null;
+//		Type type = check(expr.getExpr(), environment);
+//		switch(expr.getOp()) {
+//		case NEG:
+//			checkInstanceOf(type,expr.getExpr(),Type.Int.class);			
+//			return type;
+//		case NOT:
+//			checkInstanceOf(type,expr.getExpr(),Type.Bool.class);
+//			return type;			
+//		case LENGTHOF:
+//			checkInstanceOf(type,expr.getExpr(),Type.Array.class,Type.Strung.class);
+//			return new Type.Int();
+//		default:
+//			internalFailure("unknown unary expression encountered (" + expr + ")", file.filename,expr);
+//			return null; // dead code
+//		}
 	}
 	
 	public Type check(Expr.Variable expr, Map<String, Type> environment) {
