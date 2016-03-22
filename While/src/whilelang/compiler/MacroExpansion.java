@@ -21,6 +21,7 @@ package whilelang.compiler;
 import static whilelang.util.SyntaxError.internalFailure;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +58,7 @@ public class MacroExpansion {
 		this.types = new HashMap<String,WhileFile.TypeDecl>();
 		this.macros = new HashMap<String,WhileFile.MacroDecl>();
 
-		System.out.print("macros:"+macros.size());
+//		System.out.print("macros:"+macros.size());
 		
 		for(WhileFile.Decl declaration : wf.declarations) {
 			if(declaration instanceof WhileFile.MethodDecl) {
@@ -72,7 +73,7 @@ public class MacroExpansion {
 			}
 		}
 		
-		System.out.println("-"+macros.size()+":"+macros.keySet());
+//		System.out.println("-"+macros.size()+":"+macros.keySet());
 		
 		ArrayList<WhileFile.Decl> decls = new ArrayList<WhileFile.Decl>();
 		
@@ -143,7 +144,7 @@ public class MacroExpansion {
 		} else if(stmt instanceof Stmt.DoWhile) {
 			check((Stmt.DoWhile) stmt, environment);
 		} else if(stmt instanceof Stmt.Switch) {
-			check((Stmt.Switch) stmt, environment);
+			return check((Stmt.Switch) stmt, environment);
 		} else {
 			internalFailure("unknown statement encountered (" + stmt + ")", file.filename,stmt);
 		}
@@ -230,16 +231,15 @@ public class MacroExpansion {
 //		check(stmt.getBody(),environment);
 	}
 	
-	public void check(Stmt.Switch stmt, Map<String,Type> environment) {
-//		Type ct = check(stmt.getExpr(),environment);
-//		// Now, check each case individually
-//		for(Stmt.Case c : stmt.getCases()) {
-//			if(!c.isDefault()) {
-//				Type et = check(c.getValue(),environment);
-//				checkSubtype(ct,et,c.getValue());
-//			}
-//			check(c.getBody(),environment);
-//		}
+	public Stmt.Switch check(Stmt.Switch stmt, Map<String,Type> environment) {
+		if(stmt.getExpr()!=null){
+			List<Stmt.Case> cases = new ArrayList<Stmt.Case>();
+			for(Stmt.Case c : stmt.getCases()) {
+				cases.add(new Stmt.Case((Expr.Constant)check(c.getValue(),environment), check(c.getBody(),environment), c.attributes()));
+			}
+			return new Stmt.Switch(check(stmt.getExpr(),environment), cases, stmt.attributes());
+		}
+		return stmt;
 	}
 	
 	public Expr check(Expr expr, Map<String,Type> environment) {
@@ -292,7 +292,14 @@ public class MacroExpansion {
 				exps.add(check(e,environment));
 			}
 			return new Expr.ArrayInitialiser(exps, this.AttributesAsArray(ai.attributes()));
-		} 
+		} else if (expr instanceof Expr.RecordConstructor){
+			Expr.RecordConstructor rc = (Expr.RecordConstructor) expr;
+			ArrayList<Pair<String, Expr>> fields = new ArrayList<Pair<String, Expr>>();
+			for(Pair<String, Expr> p:rc.getFields()){
+				fields.add(new Pair<String,Expr>(p.first(),check(p.second(),environment)));
+			}
+			return new Expr.RecordConstructor(fields, this.AttributesAsArray(rc.attributes()));
+		}
 				
 //			return new Expr.Invoke(invoke.getName(), invoke.getArguments(), AttributesAsArray(invoke.attributes()));
 			

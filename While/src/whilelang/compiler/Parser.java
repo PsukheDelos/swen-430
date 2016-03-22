@@ -164,7 +164,7 @@ public class Parser {
 		}
 		match(")");
 		match("is");
-		Expr exp = parseExpr();		System.err.println("hi");
+		Expr exp = parseExpr();
 
 		return new WhileFile.MacroDecl(name.text, macroParameters, exp);
 	}
