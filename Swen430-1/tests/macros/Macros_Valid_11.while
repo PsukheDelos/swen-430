@@ -1,0 +1,23 @@
+macro MULT(x,y) is x * y
+macro SQUARE(x) is MULT(x,x)
+macro tricky(x,y) is x + y
+
+int MacroRefMacro(){
+	return SQUARE(4);
+}
+
+int trick(){
+	return 5 * tricky(0, 1);
+}
+
+void testFor(){
+	
+}
+
+void main() {
+    assert MacroRefMacro() == 16;
+    assert trick() == 5;
+    assert trick() != 1;
+}
+
+
