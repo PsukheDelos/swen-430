@@ -291,7 +291,7 @@ public interface Stmt extends SyntacticElement {
 		 *            statements.
 		 * @param attributes
 		 */
-		public While(Expr condition, Expr invariant, Collection<Stmt> body,
+		public While(Expr condition, Collection<Stmt> body,
 				Collection<Attribute> attributes) {
 			super(attributes);
 			this.condition = condition;
