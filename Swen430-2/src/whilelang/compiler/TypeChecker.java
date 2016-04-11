@@ -401,6 +401,9 @@ public class TypeChecker {
 	 * @return
 	 */
 	private Type typeOf(Object constant, SyntacticElement elem) {
+		if(constant==null){
+			return new Type.Null();
+		}
 		if (constant instanceof Boolean) {
 			return new Type.Bool();
 		} else if (constant instanceof Character) {
@@ -548,6 +551,9 @@ public class TypeChecker {
 			// OK		
 			return true;
 		} else if (t1 instanceof Type.Char && t2 instanceof Type.Char) {
+			// OK
+			return true;
+		} else if (t1 instanceof Type.Null && t2 instanceof Type.Null) {
 			// OK
 			return true;
 		} else if (t1 instanceof Type.Int && t2 instanceof Type.Int) {
