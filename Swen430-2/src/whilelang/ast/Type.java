@@ -54,6 +54,25 @@ public interface Type extends SyntacticElement {
 		public String toString() {
 			return "void";
 		}
+	}	
+	
+	/**
+	 * Represents the special <code>void</code> type which can only be used in
+	 * special circumstance (e.g. for a function return).
+	 * 
+	 * @author David J. Pearce
+	 * 
+	 */
+	public static final class Null extends SyntacticElement.Impl implements
+			Type {
+
+		public Null(Attribute... attributes) {
+			super(attributes);
+		}
+		
+		public String toString() {
+			return "null";
+		}
 	}
 
 	/**
