@@ -1,0 +1,6 @@
+macro SUM(x,y,z) is x+y+z
+ 
+void main() {
+    assert SUM(1,2,3) == 6;
+    assert SUM(5,4,9) == 18;
+}

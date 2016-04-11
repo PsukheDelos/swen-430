@@ -1,0 +1,6 @@
+macro ID(x) is x
+ 
+void main() {
+     assert ID(1) == 1;
+     assert ID(2) == 2; 
+}
