@@ -331,8 +331,14 @@ public class Interpreter {
 		case REM:
 			return ((Integer)lhs) % ((Integer)rhs);			
 		case EQ:
+			if(lhs==null && rhs==null){
+				return true;
+			}
 			return lhs.equals(rhs);
 		case NEQ:
+			if(lhs==null || rhs==null){
+				return false;
+			}
 			return !lhs.equals(rhs);
 		case LT:
 			return ((Integer)lhs) < ((Integer)rhs);			
