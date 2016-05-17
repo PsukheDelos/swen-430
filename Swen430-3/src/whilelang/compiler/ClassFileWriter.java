@@ -16,8 +16,8 @@ import jasm.lang.ClassFile;
 import jasm.lang.JvmType;
 import jasm.lang.JvmTypes;
 import jasm.lang.Modifier;
-
 import whilelang.ast.*;
+import whilelang.ast.Expr.BOp;
 import whilelang.util.Pair;
 
 /**
@@ -136,7 +136,7 @@ public class ClassFileWriter {
 	 * @param bytecodes
 	 *            The list of bytecodes being accumulated
 	 */
-	private void translate(List<Stmt> stmts, Context context, List<Bytecode> bytecodes) {		
+	private void translate(List<Stmt> stmts, Context context, List<Bytecode> bytecodes) {
 		for(Stmt s : stmts) {
 			translate(s,context,bytecodes);			
 		}		
@@ -210,6 +210,18 @@ public class ClassFileWriter {
 		
 	}
 	
+	private void translate(Stmt.While stmt, Context context, List<Bytecode> bytecodes) {
+		
+	}
+	
+	private void translate(Stmt.Print stmt, Context context, List<Bytecode> bytecodes) {
+//		System.out.println(stmt.getExpr());
+	}
+	
+	private void translate(Stmt.Switch stmt, Context context, List<Bytecode> bytecodes) {
+		
+	}
+	
 	private void translate(Stmt.IfElse stmt, Context context, List<Bytecode> bytecodes) {
 		String trueBranch = freshLabel();
 		String exitLabel = freshLabel();
@@ -226,13 +238,7 @@ public class ClassFileWriter {
 		bytecodes.add(new Bytecode.Label(exitLabel));		
 	}
 	
-	private void translate(Stmt.While stmt, Context context, List<Bytecode> bytecodes) {
-				
-	}
-	
-	private void translate(Stmt.Print stmt, Context context, List<Bytecode> bytecodes) {
-		
-	}
+
 	
 	private void translate(Stmt.Return stmt, Context context, List<Bytecode> bytecodes) {
 		Expr expr = stmt.getExpr();
@@ -248,10 +254,7 @@ public class ClassFileWriter {
 		}
 	}
 	
-	private void translate(Stmt.Switch stmt, Context context, List<Bytecode> bytecodes) {
-	
-	}
-	
+
 	private void translate(Stmt.VariableDeclaration stmt, Context context, List<Bytecode> bytecodes) {
 		Expr rhs = stmt.getExpr();
 		// Declare the variable in the context
@@ -330,15 +333,110 @@ public class ClassFileWriter {
 	}
 
 	private void translate(Expr.ArrayGenerator expr, Context context, List<Bytecode> bytecodes) {
-		
+		System.err.println("translate array generator");
 	}
 	
 	private void translate(Expr.ArrayInitialiser expr, Context context, List<Bytecode> bytecodes) {
-		
+		System.err.println("translate array initialiser");
 	}
 	
-	private void translate(Expr.Binary expr, Context context, List<Bytecode> bytecodes) {
+	private void translate(Expr.Binary expr, Context context, List<Bytecode> bytecodes) {		
+		Attribute.Type attr = expr.getLhs().attribute(Attribute.Type.class);
+		JvmType type = toJvmType(attr.type);
+
+		Expr lhs = expr.getLhs();
+		Expr rhs = expr.getRhs();
 		
+		translate(lhs,context,bytecodes);
+		translate(rhs,context,bytecodes);
+		
+		String trueLabel, falseLabel;
+		
+		switch (expr.getOp()) {
+		case AND:
+			bytecodes.add(new Bytecode.BinOp(Bytecode.BinOp.AND, type));
+			break;
+		case OR:
+			bytecodes.add(new Bytecode.BinOp(Bytecode.BinOp.OR, type));
+			break;
+		case ADD:
+			bytecodes.add(new Bytecode.BinOp(Bytecode.BinOp.ADD, type));
+			break;
+		case SUB:
+			bytecodes.add(new Bytecode.BinOp(Bytecode.BinOp.SUB, type));
+			break;
+		case MUL:
+			bytecodes.add(new Bytecode.BinOp(Bytecode.BinOp.MUL, type));
+			break;
+		case DIV:
+			bytecodes.add(new Bytecode.BinOp(Bytecode.BinOp.DIV, type));
+			break;
+		case REM:
+			bytecodes.add(new Bytecode.BinOp(Bytecode.BinOp.REM, type));
+			break;
+		case EQ:	
+			trueLabel = freshLabel();
+			falseLabel = freshLabel();
+			bytecodes.add(new Bytecode.IfCmp(Bytecode.IfCmp.EQ, type, trueLabel));
+			bytecodes.add(new Bytecode.LoadConst(false));
+			bytecodes.add(new Bytecode.Goto(falseLabel));
+			bytecodes.add(new Bytecode.Label(trueLabel));
+			bytecodes.add(new Bytecode.LoadConst(true));
+			bytecodes.add(new Bytecode.Label(falseLabel));	
+			break;
+		case NEQ:
+			trueLabel = freshLabel();
+			falseLabel = freshLabel();
+			bytecodes.add(new Bytecode.IfCmp(Bytecode.IfCmp.NE, type, trueLabel));
+			bytecodes.add(new Bytecode.LoadConst(false));
+			bytecodes.add(new Bytecode.Goto(falseLabel));
+			bytecodes.add(new Bytecode.Label(trueLabel));
+			bytecodes.add(new Bytecode.LoadConst(true));
+			bytecodes.add(new Bytecode.Label(falseLabel));	
+			break;
+		case LT:
+			trueLabel = freshLabel();
+			falseLabel = freshLabel();
+			bytecodes.add(new Bytecode.IfCmp(Bytecode.IfCmp.LT, type, trueLabel));
+			bytecodes.add(new Bytecode.LoadConst(false));
+			bytecodes.add(new Bytecode.Goto(falseLabel));
+			bytecodes.add(new Bytecode.Label(trueLabel));
+			bytecodes.add(new Bytecode.LoadConst(true));
+			bytecodes.add(new Bytecode.Label(falseLabel));	
+			break;
+		case LTEQ:
+			trueLabel = freshLabel();
+			falseLabel = freshLabel();
+			bytecodes.add(new Bytecode.IfCmp(Bytecode.IfCmp.LE, type, trueLabel));
+			bytecodes.add(new Bytecode.LoadConst(false));
+			bytecodes.add(new Bytecode.Goto(falseLabel));
+			bytecodes.add(new Bytecode.Label(trueLabel));
+			bytecodes.add(new Bytecode.LoadConst(true));
+			bytecodes.add(new Bytecode.Label(falseLabel));	
+			break;
+		case GT:
+			trueLabel = freshLabel();
+			falseLabel = freshLabel();
+			bytecodes.add(new Bytecode.IfCmp(Bytecode.IfCmp.GT, type, trueLabel));
+			bytecodes.add(new Bytecode.LoadConst(false));
+			bytecodes.add(new Bytecode.Goto(falseLabel));
+			bytecodes.add(new Bytecode.Label(trueLabel));
+			bytecodes.add(new Bytecode.LoadConst(true));
+			bytecodes.add(new Bytecode.Label(falseLabel));	
+			break;
+		case GTEQ:
+			trueLabel = freshLabel();
+			falseLabel = freshLabel();
+			bytecodes.add(new Bytecode.IfCmp(Bytecode.IfCmp.GE, type, trueLabel));
+			bytecodes.add(new Bytecode.LoadConst(false));
+			bytecodes.add(new Bytecode.Goto(falseLabel));
+			bytecodes.add(new Bytecode.Label(trueLabel));
+			bytecodes.add(new Bytecode.LoadConst(true));
+			bytecodes.add(new Bytecode.Label(falseLabel));	
+			break;
+		default:
+			throw new IllegalArgumentException("unknown binary operator encountered");
+		}
 	}
 			
 	private void translate(Expr.Constant expr, Context context, List<Bytecode> bytecodes) {
