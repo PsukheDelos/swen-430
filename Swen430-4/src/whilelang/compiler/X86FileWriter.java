@@ -561,42 +561,26 @@ public class X86FileWriter {
 	 * @param data
 	 */
 	
-	/**
-	 * 	
-	 * 	public void translate(Stmt.For statement, Context context) {
-			List<Instruction> instructions = context.instructions();
-			String headLabel = freshLabel();
-			String exitLabel = freshLabel();
-	
-			// Translate Variable Declaration
-			translate(statement.getDeclaration(), context);
-	
-			// Start loop, and translate condition
-			instructions.add(new Instruction.Label(headLabel));
-			// Translate the condition expression and branch to the false label
-			translateCondition(statement.getCondition(), exitLabel, context);
-	
-			// Translate Loop Body
-			translate(statement.getBody(), context);
-	
-			// Translate Increment and loop around
-			translate(statement.getIncrement(), context);
-			instructions.add(new Instruction.Addr(Instruction.AddrOp.jmp, headLabel));
-	
-			// Exit ...
-			instructions.add(new Instruction.Label(exitLabel));
-		}
-	 * 
-	 * **/
-	
 	public void translate(Stmt.While statement, Context context) {
-		System.out.println("Stmt.while");
-		/*
-		 * Your first objective is to implement While loops in the language, 
-		 * whilst ignoring break and continue for now. You should find the existing 
-		 * implementation of for loops to be quite helpful here. 
-		 * */
-		throw new IllegalArgumentException("while loops not implemented (yet)");
+		
+		List<Instruction> instructions = context.instructions();
+		String headLabel = freshLabel();
+		String exitLabel = freshLabel();
+		
+		// Start loop, and translate condition
+		instructions.add(new Instruction.Label(headLabel));
+		// Translate the condition expression and branch to the false label
+		translateCondition(statement.getCondition(), exitLabel, context);
+		
+		// Translate Loop Body
+		translate(statement.getBody(), context);
+		
+		// Translate Increment and loop around
+		instructions.add(new Instruction.Addr(Instruction.AddrOp.jmp, headLabel));
+
+		// Exit ...
+		instructions.add(new Instruction.Label(exitLabel));
+
 	}
 
 	/**
