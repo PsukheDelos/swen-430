@@ -11,17 +11,17 @@ wl_main:
 	movq -8(%rbp), %rax
 	movq -16(%rbp), %rbx
 	cmpq %rax, %rbx
-	jnz label430
-	jmp label428
-label430:
+	jnz label452
+	jmp label450
+label452:
 	movq $1, %rax
-	jmp label429
-label428:
+	jmp label451
+label450:
 	movq $0, %rax
-label429:
+label451:
 	movq %rax, %rdi
 	call _assertion
-label427:
+label449:
 	movq %rbp, %rsp
 	popq %rbp
 	ret

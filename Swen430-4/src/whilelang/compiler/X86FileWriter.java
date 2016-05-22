@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 
 import jx86.lang.*;
 import whilelang.ast.*;
@@ -387,12 +388,42 @@ public class X86FileWriter {
 		}
 	}
 
+	/**
+	 	The next objective is to update the compiler to support these statements. 
+	 	To do this, break and continue statements should be implemented as 
+	 	unconditional branching instructions (i.e. jmp). You will need to 
+	 	modify the Context to include the necessary targets for break and continue.
+	 * **/
+	
+	/**
+	 * 
+	 * My guess is this is slightly like a return statement.  which looks like this
+	 * 	
+	 *  List<Instruction> instructions = context.instructions();
+		Expr rv = statement.getExpr();
+
+		if (rv != null) {
+			// Determine the offset within the stack of this local variable.
+			MemoryLocation loc = context.getVariableLocation("$");
+			// Translate right-hand side and load into variable location
+			translate(rv, loc, context);
+		}
+
+		// Finally, we branch to the end of the function where the code
+		// necessary for restoring the stack is located.
+		instructions.add(new Instruction.Addr(Instruction.AddrOp.jmp, context.exitLabel()));
+	
+	 * 
+	 * 
+	 */
 	public void translate(Stmt.Break statement, Context context) {
-		throw new IllegalArgumentException("break statements not implemented (yet)");
+		List<Instruction> instructions = context.instructions();
+		instructions.add(new Instruction.Addr(Instruction.AddrOp.jmp, context.breaks.peek()));
 	}
 
 	public void translate(Stmt.Continue statement, Context context) {
-		throw new IllegalArgumentException("continue statements not implemented (yet)");
+		List<Instruction> instructions = context.instructions();
+		instructions.add(new Instruction.Addr(Instruction.AddrOp.jmp, context.continues.peek()));
 	}
 
 	/**
@@ -405,7 +436,11 @@ public class X86FileWriter {
 		List<Instruction> instructions = context.instructions();
 		String headLabel = freshLabel();
 		String exitLabel = freshLabel();
-
+		String continueLabel = freshLabel();
+		
+		context.breaks.push(exitLabel);
+		context.continues.push(continueLabel);
+		
 		// Translate Variable Declaration
 		translate(statement.getDeclaration(), context);
 
@@ -416,6 +451,8 @@ public class X86FileWriter {
 
 		// Translate Loop Body
 		translate(statement.getBody(), context);
+	
+		instructions.add(new Instruction.Label(continueLabel));
 
 		// Translate Increment and loop around
 		translate(statement.getIncrement(), context);
@@ -566,6 +603,9 @@ public class X86FileWriter {
 		List<Instruction> instructions = context.instructions();
 		String headLabel = freshLabel();
 		String exitLabel = freshLabel();
+
+		context.breaks.push(exitLabel);
+		context.continues.push(headLabel);
 		
 		// Start loop, and translate condition
 		instructions.add(new Instruction.Label(headLabel));
@@ -575,11 +615,12 @@ public class X86FileWriter {
 		// Translate Loop Body
 		translate(statement.getBody(), context);
 		
-		// Translate Increment and loop around
+		// Loop around
 		instructions.add(new Instruction.Addr(Instruction.AddrOp.jmp, headLabel));
 
 		// Exit ...
 		instructions.add(new Instruction.Label(exitLabel));
+		context.breaks.pop();
 
 	}
 
@@ -599,6 +640,8 @@ public class X86FileWriter {
 		// The exit label will represent the exit point from the switch
 		// statement. Any cases which end in a break will branch to it.
 		String exitLabel = freshLabel();
+		context.breaks.push(exitLabel);
+
 		// Translate the expression we are switching on, and place result
 		// into the target register.
 		translate(statement.getExpr(), tmps[0], context);
@@ -611,6 +654,8 @@ public class X86FileWriter {
 		// and it would be better to use a jump table in situations where we can
 		// (e.g. for integer values). However, in the general case (e.g. when
 		// switching on records), we cannot use a jump table anyway.
+		String curBody = freshLabel();
+		String nxtBody = freshLabel();
 		for (Stmt.Case c : statement.getCases()) {
 			String nextLabel = freshLabel();
 			Expr constant = c.getValue();
@@ -619,12 +664,26 @@ public class X86FileWriter {
 				translate(c.getValue(), tmps[1], context);
 				bitwiseEquality(tmps[0], tmps[1], nextLabel, context);
 			}
+			
+			instructions.add(new Instruction.Label(curBody));
+			
 			// FIXME: need to handle break and continue statements!
 			translate(c.getBody(), context);
+			
+			if (constant!=null){
+				instructions.add(new Instruction.Addr(Instruction.AddrOp.jmp, nxtBody));
+			}
+			
 			instructions.add(new Instruction.Label(nextLabel));
+			
+			curBody = nxtBody;
+			nxtBody = freshLabel();
+			
 		}
 		// Finally, add the exit label
 		instructions.add(new Instruction.Label(exitLabel));
+		
+		context.breaks.pop();
 		// Free up space used for value being switch upon
 		freeLocations(context, tmps);
 	}
@@ -2103,6 +2162,8 @@ public class X86FileWriter {
 		private final X86File.Code code;
 		private final X86File.Data data;
 		private final List<Register> freeRegisters;
+		private Stack<String> breaks = new Stack<String>();
+		private Stack<String> continues = new Stack<String>();
 
 		public Context(List<Register> freeRegisters, Map<String, MemoryLocation> localVariables, String exitLabel,
 				X86File.Code code, X86File.Data data) {
@@ -2112,6 +2173,17 @@ public class X86FileWriter {
 			this.freeRegisters = freeRegisters;
 			this.exitLabel = exitLabel;
 		}
+		
+		public Context(List<Register> freeRegisters, Map<String, MemoryLocation> localVariables, String exitLabel,
+				X86File.Code code, X86File.Data data, Stack<String> breaks, Stack<String> continues) {
+			this.localVariables = localVariables;
+			this.code = code;
+			this.data = data;
+			this.freeRegisters = freeRegisters;
+			this.exitLabel = exitLabel;
+			this.breaks = breaks;
+			this.continues = continues;
+		}
 
 		public MemoryLocation getVariableLocation(String name) {
 			return localVariables.get(name);
@@ -2120,7 +2192,7 @@ public class X86FileWriter {
 		public String exitLabel() {
 			return exitLabel;
 		}
-
+		
 		public List<Instruction> instructions() {
 			return code.instructions;
 		}
@@ -2164,7 +2236,7 @@ public class X86FileWriter {
 				}
 				ArrayList<Register> nFreeRegs = new ArrayList<Register>(freeRegisters);
 				nFreeRegs.remove(sl.register);
-				return new Context(nFreeRegs, localVariables, exitLabel, code, data);
+				return new Context(nFreeRegs, localVariables, exitLabel, code, data, breaks, continues);
 			} else {
 				return this;
 			}
@@ -2189,7 +2261,7 @@ public class X86FileWriter {
 				}
 				ArrayList<Register> nFreeRegs = new ArrayList<Register>(freeRegisters);
 				nFreeRegs.add(sl.register);
-				return new Context(nFreeRegs, localVariables, exitLabel, code, data);
+				return new Context(nFreeRegs, localVariables, exitLabel, code, data, breaks, continues);
 			} else {
 				return this;
 			}

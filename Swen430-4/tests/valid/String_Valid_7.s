@@ -5,8 +5,8 @@ wl_f:
 	movq %rsp, %rbp
 	movq 24(%rbp), %rax
 	movq %rax, 16(%rbp)
-	jmp label441
-label441:
+	jmp label463
+label463:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
@@ -26,15 +26,15 @@ wl_main:
 	movq -16(%rbp), %rax
 	movq -8(%rbp), %rbx
 	cmpq %rax, %rbx
-	jnz label443
+	jnz label465
 	movq $1, %rax
-	jmp label444
-label443:
+	jmp label466
+label465:
 	movq $0, %rax
-label444:
+label466:
 	movq %rax, %rdi
 	call _assertion
-label442:
+label464:
 	movq %rbp, %rsp
 	popq %rbp
 	ret

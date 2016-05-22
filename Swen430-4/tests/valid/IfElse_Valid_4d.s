@@ -7,29 +7,29 @@ wl_f:
 	movq 24(%rbp), %rax
 	movq $0, %rbx
 	cmpq %rbx, %rax
-	jl label245
+	jl label267
 	movq 24(%rbp), %rax
 	movq %rax, -8(%rbp)
-	jmp label244
-label245:
+	jmp label266
+label267:
 	movq 24(%rbp), %rax
 	movq $0, %rbx
 	cmpq %rbx, %rax
-	jge label247
+	jge label269
 	movq $0, %rax
 	movq %rax, 16(%rbp)
-	jmp label243
-	jmp label246
-label247:
+	jmp label265
+	jmp label268
+label269:
 	movq $0, %rax
 	movq %rax, 16(%rbp)
-	jmp label243
-label246:
-label244:
+	jmp label265
+label268:
+label266:
 	movq -8(%rbp), %rax
 	movq %rax, 16(%rbp)
-	jmp label243
-label243:
+	jmp label265
+label265:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
@@ -48,12 +48,12 @@ wl_main:
 	addq $16, %rsp
 	movq -32(%rsp), %rbx
 	cmpq %rax, %rbx
-	jnz label249
+	jnz label271
 	movq $1, %rax
-	jmp label250
-label249:
+	jmp label272
+label271:
 	movq $0, %rax
-label250:
+label272:
 	movq %rax, %rdi
 	call _assertion
 	movq $10, %rax
@@ -68,12 +68,12 @@ label250:
 	addq $16, %rsp
 	movq -32(%rsp), %rbx
 	cmpq %rax, %rbx
-	jnz label251
+	jnz label273
 	movq $1, %rax
-	jmp label252
-label251:
+	jmp label274
+label273:
 	movq $0, %rax
-label252:
+label274:
 	movq %rax, %rdi
 	call _assertion
 	movq $11, %rax
@@ -88,12 +88,12 @@ label252:
 	addq $16, %rsp
 	movq -32(%rsp), %rbx
 	cmpq %rax, %rbx
-	jnz label253
+	jnz label275
 	movq $1, %rax
-	jmp label254
-label253:
+	jmp label276
+label275:
 	movq $0, %rax
-label254:
+label276:
 	movq %rax, %rdi
 	call _assertion
 	movq $1212, %rax
@@ -108,12 +108,12 @@ label254:
 	addq $16, %rsp
 	movq -32(%rsp), %rbx
 	cmpq %rax, %rbx
-	jnz label255
+	jnz label277
 	movq $1, %rax
-	jmp label256
-label255:
+	jmp label278
+label277:
 	movq $0, %rax
-label256:
+label278:
 	movq %rax, %rdi
 	call _assertion
 	movq $0, %rax
@@ -128,15 +128,15 @@ label256:
 	addq $16, %rsp
 	movq -32(%rsp), %rbx
 	cmpq %rax, %rbx
-	jnz label257
+	jnz label279
 	movq $1, %rax
-	jmp label258
-label257:
+	jmp label280
+label279:
 	movq $0, %rax
-label258:
+label280:
 	movq %rax, %rdi
 	call _assertion
-label248:
+label270:
 	movq %rbp, %rsp
 	popq %rbp
 	ret

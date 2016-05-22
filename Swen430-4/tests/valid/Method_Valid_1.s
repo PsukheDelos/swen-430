@@ -5,8 +5,8 @@ wl_f1:
 	movq %rsp, %rbp
 	leaq str0(%rip), %rax
 	movq %rax, 16(%rbp)
-	jmp label322
-label322:
+	jmp label344
+label344:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
@@ -15,8 +15,8 @@ wl_f2:
 	movq %rsp, %rbp
 	leaq str1(%rip), %rax
 	movq %rax, 16(%rbp)
-	jmp label323
-label323:
+	jmp label345
+label345:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
@@ -31,12 +31,12 @@ wl_main:
 	movq -16(%rsp), %rax
 	leaq str1(%rip), %rbx
 	cmpq %rax, %rbx
-	jnz label325
+	jnz label347
 	movq $1, %rax
-	jmp label326
-label325:
+	jmp label348
+label347:
 	movq $0, %rax
-label326:
+label348:
 	movq %rax, %rdi
 	call _assertion
 	subq $16, %rsp
@@ -47,15 +47,15 @@ label326:
 	movq -16(%rsp), %rax
 	leaq str0(%rip), %rbx
 	cmpq %rax, %rbx
-	jnz label327
+	jnz label349
 	movq $1, %rax
-	jmp label328
-label327:
+	jmp label350
+label349:
 	movq $0, %rax
-label328:
+label350:
 	movq %rax, %rdi
 	call _assertion
-label324:
+label346:
 	movq %rbp, %rsp
 	popq %rbp
 	ret

@@ -6,27 +6,27 @@ wl_f:
 	movq 24(%rbp), %rax
 	movq $10, %rbx
 	cmpq %rbx, %rax
-	jge label142
+	jge label164
 	leaq str0(%rip), %rax
 	movq %rax, 16(%rbp)
-	jmp label140
-	jmp label141
-label142:
+	jmp label162
+	jmp label163
+label164:
 	movq 24(%rbp), %rax
 	movq $10, %rbx
 	cmpq %rbx, %rax
-	jle label144
+	jle label166
 	leaq str1(%rip), %rax
 	movq %rax, 16(%rbp)
-	jmp label140
-	jmp label143
-label144:
+	jmp label162
+	jmp label165
+label166:
 	leaq str2(%rip), %rax
 	movq %rax, 16(%rbp)
-	jmp label140
-label143:
-label141:
-label140:
+	jmp label162
+label165:
+label163:
+label162:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
@@ -45,12 +45,12 @@ wl_main:
 	addq $16, %rsp
 	movq -32(%rsp), %rbx
 	cmpq %rax, %rbx
-	jnz label146
+	jnz label168
 	movq $1, %rax
-	jmp label147
-label146:
+	jmp label169
+label168:
 	movq $0, %rax
-label147:
+label169:
 	movq %rax, %rdi
 	call _assertion
 	leaq str2(%rip), %rax
@@ -65,12 +65,12 @@ label147:
 	addq $16, %rsp
 	movq -32(%rsp), %rbx
 	cmpq %rax, %rbx
-	jnz label148
+	jnz label170
 	movq $1, %rax
-	jmp label149
-label148:
+	jmp label171
+label170:
 	movq $0, %rax
-label149:
+label171:
 	movq %rax, %rdi
 	call _assertion
 	leaq str1(%rip), %rax
@@ -85,12 +85,12 @@ label149:
 	addq $16, %rsp
 	movq -32(%rsp), %rbx
 	cmpq %rax, %rbx
-	jnz label150
+	jnz label172
 	movq $1, %rax
-	jmp label151
-label150:
+	jmp label173
+label172:
 	movq $0, %rax
-label151:
+label173:
 	movq %rax, %rdi
 	call _assertion
 	leaq str1(%rip), %rax
@@ -105,12 +105,12 @@ label151:
 	addq $16, %rsp
 	movq -32(%rsp), %rbx
 	cmpq %rax, %rbx
-	jnz label152
+	jnz label174
 	movq $1, %rax
-	jmp label153
-label152:
+	jmp label175
+label174:
 	movq $0, %rax
-label153:
+label175:
 	movq %rax, %rdi
 	call _assertion
 	leaq str0(%rip), %rax
@@ -125,15 +125,15 @@ label153:
 	addq $16, %rsp
 	movq -32(%rsp), %rbx
 	cmpq %rax, %rbx
-	jnz label154
+	jnz label176
 	movq $1, %rax
-	jmp label155
-label154:
+	jmp label177
+label176:
 	movq $0, %rax
-label155:
+label177:
 	movq %rax, %rdi
 	call _assertion
-label145:
+label167:
 	movq %rbp, %rsp
 	popq %rbp
 	ret

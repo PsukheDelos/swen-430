@@ -11,12 +11,12 @@ wl_main:
 	movq %rax, %rax
 	movq $5, %rbx
 	cmpq %rax, %rbx
-	jnz label285
+	jnz label307
 	movq $1, %rax
-	jmp label286
-label285:
+	jmp label308
+label307:
 	movq $0, %rax
-label286:
+label308:
 	movq %rax, %rdi
 	call _assertion
 	movq $10, %rax
@@ -27,12 +27,12 @@ label286:
 	movq %rax, %rax
 	movq $3, %rbx
 	cmpq %rax, %rbx
-	jnz label287
+	jnz label309
 	movq $1, %rax
-	jmp label288
-label287:
+	jmp label310
+label309:
 	movq $0, %rax
-label288:
+label310:
 	movq %rax, %rdi
 	call _assertion
 	movq $-10, %rax
@@ -43,12 +43,12 @@ label288:
 	movq %rax, %rax
 	movq $-3, %rbx
 	cmpq %rax, %rbx
-	jnz label289
+	jnz label311
 	movq $1, %rax
-	jmp label290
-label289:
+	jmp label312
+label311:
 	movq $0, %rax
-label290:
+label312:
 	movq %rax, %rdi
 	call _assertion
 	movq $1, %rax
@@ -59,15 +59,15 @@ label290:
 	movq %rax, %rax
 	movq $0, %rbx
 	cmpq %rax, %rbx
-	jnz label291
+	jnz label313
 	movq $1, %rax
-	jmp label292
-label291:
+	jmp label314
+label313:
 	movq $0, %rax
-label292:
+label314:
 	movq %rax, %rdi
 	call _assertion
-label284:
+label306:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
