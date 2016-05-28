@@ -1,0 +1,9 @@
+type tac1tup is {int x, int y}
+
+void f(tac1tup record) {
+  record.y = 3;
+}
+
+void main(){
+	
+}

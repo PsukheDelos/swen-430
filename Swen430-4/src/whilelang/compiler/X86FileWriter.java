@@ -378,44 +378,36 @@ public class X86FileWriter {
 			// Translate right-hand side and load result into variable location.
 			translate(statement.getRhs(), loc, context);
 		} else if (lhs instanceof Expr.RecordAccess) {
-			// HINT: to implement this, load the address of the field being
-			// assigned to into a register. Then create a memory location using
-			// that register as base and translate the rhs directly into that
-			// location.
-			throw new IllegalArgumentException("record assignment not implemented (yet)");
+			Expr.RecordAccess e = (Expr.RecordAccess) lhs;
+
+			/**
+			 * HINT: to implement this, 
+			 * load the address of the field being assigned to into a register.
+			 ***/
+			
+			MemoryLocation loc = context.getVariableLocation(((Expr.Variable) e.getSource()).getName());
+			
+			Type.Record type = (Type.Record) unwrap(e.getSource().attribute(Attribute.Type.class).type);			
+	
+			translate(e.getSource(),  loc, context);
+			int offset = getFieldOffset(type, e.getName());
+			
+			/**
+			 * Then create a memory location using that register as base
+			 ***/
+			MemoryLocation memLoc = new MemoryLocation(type, loc.base , loc.offset + offset);
+			
+			/**
+			 * and translate the rhs directly into that location.
+			 ***/
+			translate(statement.getRhs(), memLoc, context);
+
 		} else {
 			throw new IllegalArgumentException("array assignment not implemented (yet)");
 		}
 	}
 
-	/**
-	 	The next objective is to update the compiler to support these statements. 
-	 	To do this, break and continue statements should be implemented as 
-	 	unconditional branching instructions (i.e. jmp). You will need to 
-	 	modify the Context to include the necessary targets for break and continue.
-	 * **/
 	
-	/**
-	 * 
-	 * My guess is this is slightly like a return statement.  which looks like this
-	 * 	
-	 *  List<Instruction> instructions = context.instructions();
-		Expr rv = statement.getExpr();
-
-		if (rv != null) {
-			// Determine the offset within the stack of this local variable.
-			MemoryLocation loc = context.getVariableLocation("$");
-			// Translate right-hand side and load into variable location
-			translate(rv, loc, context);
-		}
-
-		// Finally, we branch to the end of the function where the code
-		// necessary for restoring the stack is located.
-		instructions.add(new Instruction.Addr(Instruction.AddrOp.jmp, context.exitLabel()));
-	
-	 * 
-	 * 
-	 */
 	public void translate(Stmt.Break statement, Context context) {
 		List<Instruction> instructions = context.instructions();
 		instructions.add(new Instruction.Addr(Instruction.AddrOp.jmp, context.breaks.peek()));
@@ -504,6 +496,8 @@ public class X86FileWriter {
 	public void translate(Stmt.Print statement, Context context) {
 		// Determine type of expression so as to determine appropriate print
 		// call.
+		
+		System.out.println(statement.getExpr());
 		Type type = unwrap(statement.getExpr().attribute(Attribute.Type.class).type);
 		String name;
 		if (type instanceof Type.Bool) {
@@ -1241,6 +1235,7 @@ public class X86FileWriter {
 	}
 
 	public void translate(Expr.RecordAccess e, Location target, Context context) {
+		System.out.println("ra");
 		// Determine the field offset
 		Type.Record type = (Type.Record) unwrap(e.getSource().attribute(Attribute.Type.class).type);
 		int offset = getFieldOffset(type, e.getName());
@@ -1304,6 +1299,7 @@ public class X86FileWriter {
 	 *            location)
 	 */
 	public void translate(Expr.RecordConstructor e, MemoryLocation target, Context context) {
+
 		// Create space on the stack for the resulting record
 		Type.Record type = (Type.Record) unwrap(e.attribute(Attribute.Type.class).type);
 		// Translate fields in the order and write into the preallocated stack
@@ -1320,6 +1316,27 @@ public class X86FileWriter {
 		}
 	}
 
+	public void translate(Expr.ArrayInitialiser e, MemoryLocation target, Context context) {
+
+		System.out.println("ArrayInitialiser");
+		
+//		// Create space on the stack for the resulting record
+//		Type.Record type = (Type.Record) unwrap(e.attribute(Attribute.Type.class).type);
+//		// Translate fields in the order and write into the preallocated stack
+//		// space.
+//		int offset = 0;
+//		List<Pair<String, Expr>> fields = e.getFields();
+//		for (int i = 0; i != fields.size(); ++i) {
+//			Pair<String, Expr> p = fields.get(i);
+//			Pair<Type, String> f = type.getFields().get(i);
+//			Type fieldType = unwrap(f.first());
+//			MemoryLocation fieldLoc = new MemoryLocation(fieldType, target.base, target.offset + offset);
+//			translate(p.second(), fieldLoc, context);
+//			offset += determineWidth(fieldType);
+//		}
+	}
+
+	
 	public void translate(Expr.Unary e, RegisterLocation target, Context context) {
 		List<Instruction> instructions = context.instructions();
 
@@ -1844,7 +1861,7 @@ public class X86FileWriter {
 	public int determineWidth(Type type) {
 		if (type instanceof Type.Void) {
 			return 0;
-		} else if (type instanceof Type.Bool || type instanceof Type.Char || type instanceof Type.Int) {
+		} else if (type instanceof Type.Bool || type instanceof Type.Char || type instanceof Type.Int || type instanceof Type.Array) {
 			// The size of a machine word.
 			return target.widthInBytes();
 		} else if (type instanceof Type.Record) {
@@ -1859,7 +1876,8 @@ public class X86FileWriter {
 			return target.widthInBytes();
 		} else if (type instanceof Type.Named) {
 			return determineWidth(unwrap(type));
-		} else {
+		} 
+		else {
 			throw new IllegalArgumentException("Unknown type encountered: " + type);
 		}
 	}
