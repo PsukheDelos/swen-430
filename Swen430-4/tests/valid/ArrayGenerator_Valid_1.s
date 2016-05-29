@@ -58,35 +58,6 @@ wl_inc:
 	movq 8(%rsp), %rbx
 	movq 16(%rsp), %rcx
 	addq $32, %rsp
-	movq -8(%rbp), %rax
-	movq 0(%rax), %rbx
-	incq %rbx
-	movq %rbx, %rcx
-	imulq $8, %rcx
-	subq $16, %rsp
-	movq %rax, 0(%rsp)
-	movq %rbx, 8(%rsp)
-	movq %rcx, %rdi
-	call _malloc
-	movq %rax, %rcx
-	movq 0(%rsp), %rax
-	movq 8(%rsp), %rbx
-	addq $16, %rsp
-	subq $32, %rsp
-	movq %rax, 0(%rsp)
-	movq %rbx, 8(%rsp)
-	movq %rcx, 16(%rsp)
-	movq %rcx, %rdi
-	movq %rax, %rsi
-	movq %rbx, %rdx
-	call _intncpy
-	movq 0(%rsp), %rax
-	movq 8(%rsp), %rbx
-	movq 16(%rsp), %rcx
-	addq $32, %rsp
-	movq %rcx, %rax
-	movq %rax, %rdi
-	call _prnintn
 	movq $0, %rax
 	movq %rax, -16(%rbp)
 label52:

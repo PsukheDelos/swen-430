@@ -1,6 +1,5 @@
 int[] inc(int[] xs) {
     int[] r = [0;|xs|];
-    print r;
     for(int i=0;i!=|xs|;i=i+1) {
         r[i] = xs[i]+1;
     }
