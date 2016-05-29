@@ -8,41 +8,29 @@ wl_main:
 	movq %rax, -16(%rbp)
 	movq $1, %rax
 	movq %rax, -8(%rbp)
-	subq $16, %rsp
-	movq -16(%rbp), %rax
-	movq %rax, 0(%rsp)
-	movq -8(%rbp), %rax
-	movq %rax, 8(%rsp)
-	movq 0(%rsp), %rax
-	addq $16, %rsp
-	movq $0, %rbx
-	cmpq %rax, %rbx
-	jnz label864
 	movq $1, %rax
-	jmp label865
-label864:
-	movq $0, %rax
-label865:
-	movq %rax, %rdi
-	call _assertion
-	subq $16, %rsp
-	movq -16(%rbp), %rax
-	movq %rax, 0(%rsp)
-	movq -8(%rbp), %rax
-	movq %rax, 8(%rsp)
-	movq 8(%rsp), %rax
-	addq $16, %rsp
 	movq $1, %rbx
 	cmpq %rax, %rbx
-	jnz label866
+	jnz label1017
 	movq $1, %rax
-	jmp label867
-label866:
+	jmp label1018
+label1017:
 	movq $0, %rax
-label867:
+label1018:
 	movq %rax, %rdi
 	call _assertion
-label863:
+	movq $1, %rax
+	movq $1, %rbx
+	cmpq %rax, %rbx
+	jnz label1019
+	movq $1, %rax
+	jmp label1020
+label1019:
+	movq $0, %rax
+label1020:
+	movq %rax, %rdi
+	call _assertion
+label1016:
 	movq %rbp, %rsp
 	popq %rbp
 	ret

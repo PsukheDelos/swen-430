@@ -6,18 +6,18 @@ wl_main:
 	subq $16, %rsp
 	leaq str0(%rip), %rax
 	movq %rax, -8(%rbp)
-	movq -8(%rbp), %rax
-	leaq str0(%rip), %rbx
-	cmpq %rax, %rbx
-	jnz label468
 	movq $1, %rax
-	jmp label469
-label468:
+	movq $1, %rbx
+	cmpq %rax, %rbx
+	jnz label596
+	movq $1, %rax
+	jmp label597
+label596:
 	movq $0, %rax
-label469:
+label597:
 	movq %rax, %rdi
 	call _assertion
-label467:
+label595:
 	movq %rbp, %rsp
 	popq %rbp
 	ret

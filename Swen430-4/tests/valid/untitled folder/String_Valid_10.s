@@ -8,39 +8,31 @@ wl_main:
 	movq %rax, -8(%rbp)
 	leaq str1(%rip), %rax
 	movq %rax, -16(%rbp)
-	subq $16, %rsp
-	movq -16(%rbp), %rax
-	movq %rax, 0(%rsp)
-	movq 0(%rsp), %rax
-	addq $16, %rsp
-	movq -8(%rbp), %rbx
-	cmpq %rax, %rbx
-	jnz label456
-	jmp label454
-label456:
 	movq $1, %rax
-	jmp label455
-label454:
+	movq $1, %rbx
+	cmpq %rax, %rbx
+	jnz label584
+	movq $1, %rax
+	jmp label585
+label584:
 	movq $0, %rax
-label455:
+label585:
 	movq %rax, %rdi
 	call _assertion
-	subq $16, %rsp
-	movq -16(%rbp), %rax
-	movq %rax, 0(%rsp)
-	movq 0(%rsp), %rax
-	addq $16, %rsp
-	movq -8(%rbp), %rbx
-	cmpq %rax, %rbx
-	jnz label457
+	movq -8(%rbp), %rax
+	movq %rax, -16(%rbp)
 	movq $1, %rax
-	jmp label458
-label457:
+	movq $1, %rbx
+	cmpq %rax, %rbx
+	jnz label586
+	movq $1, %rax
+	jmp label587
+label586:
 	movq $0, %rax
-label458:
+label587:
 	movq %rax, %rdi
 	call _assertion
-label453:
+label583:
 	movq %rbp, %rsp
 	popq %rbp
 	ret

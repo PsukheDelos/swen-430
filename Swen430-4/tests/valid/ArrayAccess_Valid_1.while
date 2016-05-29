@@ -6,6 +6,7 @@ int f(int[] x) {
 
 void main() {
     int[] arr = [1,2,3];
+    print arr[0];
     assert f(arr) == 2;
     assert arr == [1,2,3];
 }

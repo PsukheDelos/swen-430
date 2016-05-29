@@ -5,29 +5,26 @@ wl_pred:
 	movq %rsp, %rbp
 	movq $0, %rax
 	movq %rax, 16(%rbp)
-	jmp label91
-label91:
+	jmp label196
+label196:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
 wl_main:
 	pushq %rbp
 	movq %rsp, %rbp
-	subq $16, %rsp
-	call wl_pred
-	addq $16, %rsp
-	movq -16(%rsp), %rax
-	movq $0, %rbx
-	cmpq %rax, %rbx
-	jnz label93
 	movq $1, %rax
-	jmp label94
-label93:
+	movq $1, %rbx
+	cmpq %rax, %rbx
+	jnz label198
+	movq $1, %rax
+	jmp label199
+label198:
 	movq $0, %rax
-label94:
+label199:
 	movq %rax, %rdi
 	call _assertion
-label92:
+label197:
 	movq %rbp, %rsp
 	popq %rbp
 	ret

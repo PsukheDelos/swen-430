@@ -6,93 +6,66 @@ wl_f:
 	movq 24(%rbp), %rax
 	movq $0, %rbx
 	cmpq %rax, %rbx
-	jnz label600
-label598:
+	jnz label727
+label725:
 	leaq str0(%rip), %rbx
 	movq %rbx, 16(%rbp)
-	jmp label596
-	jmp label599
-label600:
+	jmp label723
+	jmp label726
+label727:
 	movq $1, %rbx
 	cmpq %rax, %rbx
-	jnz label602
-label599:
-	jmp label601
-label602:
-label601:
+	jnz label729
+label726:
+	jmp label728
+label729:
+label728:
 	leaq str1(%rip), %rbx
 	movq %rbx, 16(%rbp)
-	jmp label596
-label604:
-label597:
-label596:
+	jmp label723
+label731:
+label724:
+label723:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
 wl_main:
 	pushq %rbp
 	movq %rsp, %rbp
-	leaq str0(%rip), %rax
-	subq $16, %rsp
-	movq %rax, 0(%rsp)
-	subq $16, %rsp
-	movq $0, %rbx
-	movq %rbx, 8(%rsp)
-	call wl_f
-	addq $16, %rsp
-	movq 0(%rsp), %rax
-	addq $16, %rsp
-	movq -32(%rsp), %rbx
-	cmpq %rax, %rbx
-	jnz label607
 	movq $1, %rax
-	jmp label608
-label607:
-	movq $0, %rax
-label608:
-	movq %rax, %rdi
-	call _assertion
-	leaq str1(%rip), %rax
-	subq $16, %rsp
-	movq %rax, 0(%rsp)
-	subq $16, %rsp
 	movq $1, %rbx
-	movq %rbx, 8(%rsp)
-	call wl_f
-	addq $16, %rsp
-	movq 0(%rsp), %rax
-	addq $16, %rsp
-	movq -32(%rsp), %rbx
 	cmpq %rax, %rbx
-	jnz label609
+	jnz label734
 	movq $1, %rax
-	jmp label610
-label609:
+	jmp label735
+label734:
 	movq $0, %rax
-label610:
+label735:
 	movq %rax, %rdi
 	call _assertion
-	leaq str1(%rip), %rax
-	subq $16, %rsp
-	movq %rax, 0(%rsp)
-	subq $16, %rsp
-	movq $2, %rbx
-	movq %rbx, 8(%rsp)
-	call wl_f
-	addq $16, %rsp
-	movq 0(%rsp), %rax
-	addq $16, %rsp
-	movq -32(%rsp), %rbx
-	cmpq %rax, %rbx
-	jnz label611
 	movq $1, %rax
-	jmp label612
-label611:
+	movq $1, %rbx
+	cmpq %rax, %rbx
+	jnz label736
+	movq $1, %rax
+	jmp label737
+label736:
 	movq $0, %rax
-label612:
+label737:
 	movq %rax, %rdi
 	call _assertion
-label606:
+	movq $1, %rax
+	movq $1, %rbx
+	cmpq %rax, %rbx
+	jnz label738
+	movq $1, %rax
+	jmp label739
+label738:
+	movq $0, %rax
+label739:
+	movq %rax, %rdi
+	call _assertion
+label733:
 	movq %rbp, %rsp
 	popq %rbp
 	ret

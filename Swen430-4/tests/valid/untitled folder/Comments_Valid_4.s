@@ -4,9 +4,17 @@ wl_main:
 	pushq %rbp
 	movq %rsp, %rbp
 	movq $1, %rax
+	movq $1, %rbx
+	cmpq %rax, %rbx
+	jnz label222
+	movq $1, %rax
+	jmp label223
+label222:
+	movq $0, %rax
+label223:
 	movq %rax, %rdi
 	call _assertion
-label102:
+label221:
 	movq %rbp, %rsp
 	popq %rbp
 	ret

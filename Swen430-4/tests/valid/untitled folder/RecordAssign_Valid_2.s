@@ -21,8 +21,8 @@ wl_f:
 	movq 8(%rsp), %rax
 	movq %rax, 24(%rbp)
 	addq $16, %rsp
-	jmp label6
-label6:
+	jmp label515
+label515:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
@@ -38,7 +38,7 @@ wl_main:
 	movq %rax, -16(%rbp)
 	movq $2, %rax
 	movq %rax, -24(%rbp)
-label7:
+label516:
 	movq %rbp, %rsp
 	popq %rbp
 	ret

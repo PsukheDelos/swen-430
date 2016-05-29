@@ -349,6 +349,10 @@ public class X86FileWriter {
 	 * @param data
 	 */
 	public void translate(Stmt.Assert statement, Context context) {
+		//Maybe I could just make all the asserts statements true == true... :P 
+//		Expr e = new Expr.Constant(true, statement.getExpr().attributes());
+//		Stmt.Assert a = new Stmt.Assert(new Expr.Binary(Expr.BOp.EQ, e, e, statement.getExpr().attributes()), statement.attributes());
+		
 		// We know the following must be a register location because the
 		// condition returns a boolean which alwasy fits in a register.
 		RegisterLocation loc = (RegisterLocation) allocateLocation(statement.getExpr(), context);
@@ -379,12 +383,9 @@ public class X86FileWriter {
 			translate(statement.getRhs(), loc, context);
 		} else if (lhs instanceof Expr.RecordAccess) {
 			Expr.RecordAccess e = (Expr.RecordAccess) lhs;
-
 			/**
-			 * HINT: to implement this, 
 			 * load the address of the field being assigned to into a register.
 			 ***/
-			
 			MemoryLocation loc = context.getVariableLocation(((Expr.Variable) e.getSource()).getName());
 			
 			Type.Record type = (Type.Record) unwrap(e.getSource().attribute(Attribute.Type.class).type);			
@@ -402,8 +403,15 @@ public class X86FileWriter {
 			 ***/
 			translate(statement.getRhs(), memLoc, context);
 
-		} else {
-			throw new IllegalArgumentException("array assignment not implemented (yet)");
+		} else if (lhs instanceof Expr.IndexOf) {
+			Expr.IndexOf e = (Expr.IndexOf) lhs;
+			
+			statement.getLhs();
+			statement.getRhs();
+			
+		}
+		else {
+			throw new IllegalArgumentException(statement + " not implemented (yet)");
 		}
 	}
 
@@ -697,7 +705,6 @@ public class X86FileWriter {
 	 *            hold.
 	 */
 	public void translateCondition(Expr e, String falseLabel, Context context) {
-		//
 		if (e instanceof Expr.Unary) {
 			translateLogicalNotCondition((Expr.Unary) e, falseLabel, context);
 		} else if (e instanceof Expr.Binary) {
@@ -710,6 +717,14 @@ public class X86FileWriter {
 				translateShortCircuitDisjunctCondition((Expr.Binary) e, falseLabel, context);
 				break;
 			case EQ:
+				Type rhsType = unwrap(b.getRhs().attribute(Attribute.Type.class).type);
+				Type lhsType = unwrap(b.getLhs().attribute(Attribute.Type.class).type);
+				if (rhsType instanceof Type.Array && lhsType instanceof Type.Array){
+					translateArrayEqualityCondition(b, falseLabel, context);
+				} else {
+					translateEqualityCondition((Expr.Binary) e, falseLabel, context);
+				}
+				break;
 			case NEQ:
 				translateEqualityCondition((Expr.Binary) e, falseLabel, context);
 				break;
@@ -737,6 +752,41 @@ public class X86FileWriter {
 		}
 	}
 
+	public void translateArrayEqualityCondition(Expr.Binary e, String falseLabel, Context context){
+		//--------------
+		List<Instruction> instructions = context.instructions();
+		//--------------
+		Type type = unwrap(e.attribute(Attribute.Type.class).type);
+		//--------------
+		RegisterLocation lhsRegister = context.selectFreeRegister(type);
+		translate(e.getLhs(), lhsRegister, context);
+		context = context.lockLocation(lhsRegister);
+		//--------------
+		RegisterLocation rhsRegister = context.selectFreeRegister(type);
+		translate(e.getRhs(), rhsRegister, context);
+		context = context.lockLocation(rhsRegister);
+		//--------------
+		RegisterLocation i = context.selectFreeRegister(type);
+		instructions.add(new Instruction.ImmIndReg(Instruction.ImmIndRegOp.mov, 0, lhsRegister.register, i.register));
+		instructions.add(new Instruction.Reg(Instruction.RegOp.inc, i.register));
+		context = context.lockLocation(i);
+		//--------------
+		RegisterLocation b = context.selectFreeRegister(type);
+		makeExternalMethodCall("intncmp", context, b.register, lhsRegister.register, rhsRegister.register, i.register);
+		context = context.lockLocation(b);
+		//--------------
+		if (e.getOp() == Expr.BOp.EQ){
+			instructions.add(new Instruction.ImmReg(Instruction.ImmRegOp.cmp, 0, b.register));
+			instructions.add(new Instruction.Addr(Instruction.AddrOp.jz, falseLabel));
+		} else {
+			instructions.add(new Instruction.ImmReg(Instruction.ImmRegOp.cmp, 1, b.register));
+			instructions.add(new Instruction.Addr(Instruction.AddrOp.jz, falseLabel));
+		}
+		//--------------
+		freeLocations(context, lhsRegister, rhsRegister, b);
+		//--------------
+	}
+	
 	/**
 	 * Translate a logical NOT expression (i.e. '!').
 	 * 
@@ -863,6 +913,7 @@ public class X86FileWriter {
 		translate(e.getRhs(), tmps[1], context);
 		//
 		// Perform a bitwise comparison of the two data chunks
+		System.out.println(e.getLhs());
 		if (e.getOp() == Expr.BOp.EQ) {
 			bitwiseEquality(tmps[0], tmps[1], falseLabel, context);
 		} else {
@@ -891,7 +942,6 @@ public class X86FileWriter {
 	 *            Location to store result in.
 	 */
 	public void translate(Expr expression, Location target, Context context) {	
-//		System.out.println(expression + " " + target);
 		if (expression instanceof Expr.Binary) {
 			if (target instanceof RegisterLocation) {
 				translate((Expr.Binary) expression, (RegisterLocation) target, context);
@@ -915,8 +965,10 @@ public class X86FileWriter {
 		} else if (expression instanceof Expr.Variable) {
 			translate((Expr.Variable) expression, target, context);
 		} else if (expression instanceof Expr.ArrayInitialiser){
-			translate((Expr.ArrayInitialiser) expression, (MemoryLocation) target, context);
-		} 
+			translate((Expr.ArrayInitialiser) expression, target, context);
+		} else if (expression instanceof Expr.IndexOf){
+			translate ((Expr.IndexOf) expression, target, context);
+		}
 		else {
 			throw new IllegalArgumentException("Unknown expression encountered: " + expression);
 		}
@@ -1084,6 +1136,7 @@ public class X86FileWriter {
 	}
 
 	public void translate(Expr.Constant e, Location target, Context context) {
+//		System.out.println(e.getValue());
 		translateConstant(e.getValue(), target, context);
 	}
 
@@ -1237,8 +1290,45 @@ public class X86FileWriter {
 		}
 	}
 
+	public void translate(Expr.IndexOf e, Location target, Context context){
+		/**
+		 * Initial Variables 
+		 ***/
+		List<Instruction> instructions = context.instructions();
+		Type.Array type = (Type.Array) unwrap(e.getSource().attribute(Attribute.Type.class).type);
+		int scaling = determineWidth(new Type.Int());
+		
+		/**
+		 * Load index into register and increment because of length at starts
+		 ***/
+		RegisterLocation ind = context.selectFreeRegister(type);
+		translate(e.getIndex(), ind, context);
+		instructions.add(new Instruction.Reg(Instruction.RegOp.inc, ind.register));
+		context = context.lockLocation(ind);
+	
+		/**
+		 * Load array location into register
+		 ***/
+		RegisterLocation src = context.selectFreeRegister(type);
+		translate(e.getSource(), src, context);
+		context = context.lockLocation(src);
+				
+		/**
+		 * Create a register to store the answer and then store it there 
+		 ***/
+		RegisterLocation ans = context.selectFreeRegister(type);
+		instructions.add(new Instruction.IndRegImmReg(Instruction.IndRegImmRegOp.mov, src.register, ind.register, scaling, ans.register));
+		context = context.lockLocation(ans);
+		
+		/**
+		 * Do a bitwise copy of answer into our target
+		 ***/
+		bitwiseCopy(ans, target, context);
+		freeLocations(context, ind, src, ans);
+	}
+	
 	public void translate(Expr.RecordAccess e, Location target, Context context) {
-		System.out.println("ra");
+//		System.out.println("ra");
 		// Determine the field offset
 		Type.Record type = (Type.Record) unwrap(e.getSource().attribute(Attribute.Type.class).type);
 		int offset = getFieldOffset(type, e.getName());
@@ -1319,88 +1409,44 @@ public class X86FileWriter {
 		}
 	}
 
-	public void translate(Expr.ArrayInitialiser e, MemoryLocation target, Context context) {
-		List<Instruction> instructions = context.instructions();
+	public void translate(Expr.ArrayInitialiser e, Location target, Context context) {
 		/**
-		 * Print
+		 * Initial Variables
 		 ***/
-		System.out.println("ArrayInitialiser");		
-		System.out.println("Length: " + e.getArguments().size());
-		
+		List<Instruction> instructions = context.instructions();
 		Type.Array type = (Type.Array) unwrap(e.attribute(Attribute.Type.class).type);
 		
 		/**
 		 * An appropriate amount of memory needs to be allocated
 		 ***/
-		
-		int space = 8 + (8 * e.getArguments().size());
+		int space = (e.getArguments().size() + 1) * determineWidth(new Type.Int());
 		RegisterLocation r = context.selectFreeRegister(type);
 		instructions.add(new Instruction.ImmReg(Instruction.ImmRegOp.mov, space, r.register));
 		allocateSpaceOnHeap(r.register, context);
-		instructions.add(new Instruction.RegImmInd(Instruction.RegImmIndOp.mov, r.register, target.offset, target.base));
+		context = context.lockLocation(r);
 		
+		//
+//		instructions.add(new Instruction.RegImmInd(Instruction.RegImmIndOp.mov, r.register, target.offset, target.base));
+		bitwiseCopy(r, target, context);
 		RegisterLocation loc = context.selectFreeRegister(type);
-//		context = context.lockLocation(loc);
+		context = context.lockLocation(loc);
 		
+		/**
+		 * The first word of the array is reserved for holding the length
+		 ***/
 		int offset = 0;
 		instructions.add(new Instruction.ImmReg(Instruction.ImmRegOp.mov, e.getArguments().size(), loc.register));
-		instructions.add(new Instruction.RegImmInd(Instruction.RegImmIndOp.mov, loc.register, target.offset + offset, target.base));
+		instructions.add(new Instruction.RegImmInd(Instruction.RegImmIndOp.mov, loc.register, offset, r.register));
 
-//		MemoryLocation m = new MemoryLocation(type, target.base, 8);
-//		off
-		
+		/**
+		 * Every element in the initialiser is evaluated and assigned into the array
+		 ***/
 		for (Expr a: e.getArguments()){
-			offset += 8;
-//			MemoryLocation m = new MemoryLocation(type, target.base, target.offset + offset);
-
-			
-			
-//			offset+=24;
-//			translate(a, m, context);
-			
-			
-//			instructions.add(new Instruction.ImmReg(Instruction.ImmRegOp.mov, e.getArguments().size(), loc.register));
-
-			
-//			instructions.add(new Instruction.RegImmInd(Instruction.RegImmIndOp.mov, m.base, target.offset + offset, target.base));
-
-//			instructions.add(new Instruction.ImmReg(Instruction.ImmRegOp.mov, a, loc.register));
-//			instructions.add(new Instruction.RegImmInd(Instruction.RegImmIndOp.mov, loc.register, target.offset+offset, target.base));
-
-//			translate(a, loc, context);
-//			translate(a, target, context);
-//			instructions.add(new Instruction.RegImmInd(Instruction.RegImmIndOp.mov, loc.register, target.offset+offset, loc.register));
-//			instructions.add(new Instruction.RegImmInd(Instruction.RegImmIndOp.mov, loc.register, target.offset+offset, target.base));
-//			offset += 8;
+			offset += this.target.widthInBytes();
+			translate(a, loc, context);
+			instructions.add(new Instruction.RegImmInd(Instruction.RegImmIndOp.mov, loc.register, offset, r.register));
 		}
 		
-//		freeLocations(context, loc);
-		
-		
-//			bitwiseCopy(r, mem, context);
-//		
-//		MemoryLocation m = new MemoryLocation(type, r.register, 0);
-//		
-//		}	
-//		
-		
-		
-		
-		
-//		// Create space on the stack for the resulting record
-//		Type.Record type = (Type.Record) unwrap(e.attribute(Attribute.Type.class).type);
-//		// Translate fields in the order and write into the preallocated stack
-//		// space.
-//		int offset = 0;
-//		List<Pair<String, Expr>> fields = e.getFields();
-//		for (int i = 0; i != fields.size(); ++i) {
-//			Pair<String, Expr> p = fields.get(i);
-//			Pair<Type, String> f = type.getFields().get(i);
-//			Type fieldType = unwrap(f.first());
-//			MemoryLocation fieldLoc = new MemoryLocation(fieldType, target.base, target.offset + offset);
-//			translate(p.second(), fieldLoc, context);
-//			offset += determineWidth(fieldType);
-//		}
 	}
 
 	
@@ -1422,6 +1468,7 @@ public class X86FileWriter {
 			instructions.add(new Instruction.Reg(Instruction.RegOp.neg, target.register));
 			break;
 		case LENGTHOF:
+			instructions.add(new Instruction.ImmIndReg(Instruction.ImmIndRegOp.mov, 0, target.register, target.register));
 			break;
 		default:
 			throw new IllegalArgumentException("Unknown unary operator: " + e);

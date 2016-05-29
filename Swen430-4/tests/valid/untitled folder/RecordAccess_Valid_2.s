@@ -19,8 +19,8 @@ wl_sum1:
 	addq $16, %rsp
 	addq %rbx, %rax
 	movq %rax, 16(%rbp)
-	jmp label369
-label369:
+	jmp label500
+label500:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
@@ -35,7 +35,7 @@ wl_sum2:
 	movq 0(%rsp), %rax
 	addq $16, %rsp
 	cmpq $0, %rax
-	jz label371
+	jz label502
 	subq $16, %rsp
 	movq 24(%rbp), %rax
 	movq %rax, 0(%rsp)
@@ -44,15 +44,15 @@ wl_sum2:
 	movq 8(%rsp), %rax
 	addq $16, %rsp
 	cmpq $0, %rax
-	jz label371
+	jz label502
 	movq $1, %rax
-	jmp label372
-label371:
+	jmp label503
+label502:
 	movq $0, %rax
-label372:
+label503:
 	movq %rax, 16(%rbp)
-	jmp label370
-label370:
+	jmp label501
+label501:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
@@ -64,47 +64,33 @@ wl_main:
 	movq %rax, -16(%rbp)
 	movq $2, %rax
 	movq %rax, -8(%rbp)
-	subq $32, %rsp
-	movq -16(%rbp), %rax
-	movq %rax, 8(%rsp)
-	movq -8(%rbp), %rax
-	movq %rax, 16(%rsp)
-	call wl_sum1
-	addq $32, %rsp
-	movq -32(%rsp), %rax
-	movq $3, %rbx
-	cmpq %rax, %rbx
-	jnz label374
 	movq $1, %rax
-	jmp label375
-label374:
+	movq $1, %rbx
+	cmpq %rax, %rbx
+	jnz label505
+	movq $1, %rax
+	jmp label506
+label505:
 	movq $0, %rax
-label375:
+label506:
 	movq %rax, %rdi
 	call _assertion
 	movq $1, %rax
 	movq %rax, -32(%rbp)
 	movq $0, %rax
 	movq %rax, -24(%rbp)
-	subq $32, %rsp
-	movq -32(%rbp), %rax
-	movq %rax, 8(%rsp)
-	movq -24(%rbp), %rax
-	movq %rax, 16(%rsp)
-	call wl_sum2
-	addq $32, %rsp
-	movq -32(%rsp), %rax
-	movq $0, %rbx
-	cmpq %rax, %rbx
-	jnz label376
 	movq $1, %rax
-	jmp label377
-label376:
+	movq $1, %rbx
+	cmpq %rax, %rbx
+	jnz label507
+	movq $1, %rax
+	jmp label508
+label507:
 	movq $0, %rax
-label377:
+label508:
 	movq %rax, %rdi
 	call _assertion
-label373:
+label504:
 	movq %rbp, %rsp
 	popq %rbp
 	ret

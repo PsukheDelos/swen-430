@@ -6,31 +6,31 @@ wl_main:
 	subq $16, %rsp
 	movq $1, %rax
 	movq %rax, -8(%rbp)
-	movq -8(%rbp), %rax
+	movq $1, %rax
 	movq $1, %rbx
 	cmpq %rax, %rbx
-	jnz label15
+	jnz label115
 	movq $1, %rax
-	jmp label16
-label15:
+	jmp label116
+label115:
 	movq $0, %rax
-label16:
+label116:
 	movq %rax, %rdi
 	call _assertion
 	movq $0, %rax
 	movq %rax, -8(%rbp)
-	movq -8(%rbp), %rax
-	movq $0, %rbx
-	cmpq %rax, %rbx
-	jnz label17
 	movq $1, %rax
-	jmp label18
-label17:
+	movq $1, %rbx
+	cmpq %rax, %rbx
+	jnz label117
+	movq $1, %rax
+	jmp label118
+label117:
 	movq $0, %rax
-label18:
+label118:
 	movq %rax, %rdi
 	call _assertion
-label14:
+label114:
 	movq %rbp, %rsp
 	popq %rbp
 	ret

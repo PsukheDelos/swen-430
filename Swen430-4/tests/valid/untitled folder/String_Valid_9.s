@@ -8,43 +8,29 @@ wl_main:
 	movq %rax, -8(%rbp)
 	movq -8(%rbp), %rax
 	movq %rax, -16(%rbp)
-	subq $16, %rsp
-	movq -16(%rbp), %rax
-	movq %rax, 0(%rsp)
-	leaq str0(%rip), %rax
-	movq %rax, 8(%rsp)
-	movq 0(%rsp), %rax
-	movq 8(%rsp), %rbx
-	cmpq %rbx, %rax
-	jnz label478
-	addq $16, %rsp
 	movq $1, %rax
-	jmp label479
-label478:
+	movq $1, %rbx
+	cmpq %rax, %rbx
+	jnz label606
+	movq $1, %rax
+	jmp label607
+label606:
 	movq $0, %rax
-label479:
+label607:
 	movq %rax, %rdi
 	call _assertion
-	subq $16, %rsp
-	movq -16(%rbp), %rax
-	movq %rax, 0(%rsp)
-	leaq str1(%rip), %rax
-	movq %rax, 8(%rsp)
-	movq 0(%rsp), %rax
-	movq 8(%rsp), %rbx
-	cmpq %rbx, %rax
-	jnz label482
-	jmp label480
-label482:
-	addq $16, %rsp
 	movq $1, %rax
-	jmp label481
-label480:
+	movq $1, %rbx
+	cmpq %rax, %rbx
+	jnz label608
+	movq $1, %rax
+	jmp label609
+label608:
 	movq $0, %rax
-label481:
+label609:
 	movq %rax, %rdi
 	call _assertion
-label477:
+label605:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
@@ -59,5 +45,3 @@ _main:
 	.data
 str0:
 	.asciz "Hello World"
-str1:
-	.asciz "Blah"
