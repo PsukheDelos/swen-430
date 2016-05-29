@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Stack;
 
 import jx86.lang.*;
+import jx86.lang.Constant.Quad;
 import whilelang.ast.*;
 import whilelang.util.*;
 
@@ -373,6 +374,7 @@ public class X86FileWriter {
 	 */
 	public void translate(Stmt.Assign statement, Context context) {
 		Expr lhs = statement.getLhs();
+		Expr rhs = statement.getRhs();
 
 		// Translate assignment from HDI to left-hand side
 		if (lhs instanceof Expr.Variable) {
@@ -404,11 +406,30 @@ public class X86FileWriter {
 			translate(statement.getRhs(), memLoc, context);
 
 		} else if (lhs instanceof Expr.IndexOf) {
+			
+			List<Instruction> instructions = context.instructions();
+			int scaling = determineWidth(new Type.Int());
 			Expr.IndexOf e = (Expr.IndexOf) lhs;
+			Type.Array type = (Type.Array) unwrap(e.getSource().attribute(Attribute.Type.class).type);			
+			MemoryLocation mem = context.getVariableLocation(((Expr.Variable)e.getSource()).getName());
 			
-			statement.getLhs();
-			statement.getRhs();
+			RegisterLocation src = context.selectFreeRegister(type);
+			translate(e.getSource(), src, context);
+			context = context.lockLocation(src);
 			
+			RegisterLocation v = (RegisterLocation) allocateLocation(rhs, context);
+			translate(rhs, v, context);
+			context = context.lockLocation(v);
+			
+			RegisterLocation ind = context.selectFreeRegister(type);
+			translate(e.getIndex(), ind, context);
+			instructions.add(new Instruction.Reg(Instruction.RegOp.inc, ind.register));
+			context = context.lockLocation(ind);
+
+			instructions.add(new Instruction.RegIndRegImm(Instruction.RegIndRegImmOp.mov, v.register, src.register, ind.register, scaling));
+
+			bitwiseCopy(src, mem, context);
+
 		}
 		else {
 			throw new IllegalArgumentException(statement + " not implemented (yet)");
@@ -657,7 +678,9 @@ public class X86FileWriter {
 		// switching on records), we cannot use a jump table anyway.
 		String curBody = freshLabel();
 		String nxtBody = freshLabel();
+		int i = 0;
 		for (Stmt.Case c : statement.getCases()) {
+			i++;
 			String nextLabel = freshLabel();
 			Expr constant = c.getValue();
 			if (constant != null) {
@@ -671,7 +694,7 @@ public class X86FileWriter {
 			// FIXME: need to handle break and continue statements!
 			translate(c.getBody(), context);
 			
-			if (constant!=null){
+			if (constant!=null && i<statement.getCases().size()){
 				instructions.add(new Instruction.Addr(Instruction.AddrOp.jmp, nxtBody));
 			}
 			
@@ -766,24 +789,24 @@ public class X86FileWriter {
 		translate(e.getRhs(), rhsRegister, context);
 		context = context.lockLocation(rhsRegister);
 		//--------------
-		RegisterLocation i = context.selectFreeRegister(type);
-		instructions.add(new Instruction.ImmIndReg(Instruction.ImmIndRegOp.mov, 0, lhsRegister.register, i.register));
-		instructions.add(new Instruction.Reg(Instruction.RegOp.inc, i.register));
-		context = context.lockLocation(i);
+			RegisterLocation i = context.selectFreeRegister(type);
+			instructions.add(new Instruction.ImmIndReg(Instruction.ImmIndRegOp.mov, 0, lhsRegister.register, i.register));
+			instructions.add(new Instruction.Reg(Instruction.RegOp.inc, i.register));
+			context = context.lockLocation(i);
 		//--------------
-		RegisterLocation b = context.selectFreeRegister(type);
-		makeExternalMethodCall("intncmp", context, b.register, lhsRegister.register, rhsRegister.register, i.register);
-		context = context.lockLocation(b);
+		RegisterLocation res = context.selectFreeRegister(type);
+		makeExternalMethodCall("intncmp", context, res.register, lhsRegister.register, rhsRegister.register, i.register);
+		context = context.lockLocation(res);
 		//--------------
 		if (e.getOp() == Expr.BOp.EQ){
-			instructions.add(new Instruction.ImmReg(Instruction.ImmRegOp.cmp, 0, b.register));
+			instructions.add(new Instruction.ImmReg(Instruction.ImmRegOp.cmp, 0, res.register));
 			instructions.add(new Instruction.Addr(Instruction.AddrOp.jz, falseLabel));
 		} else {
-			instructions.add(new Instruction.ImmReg(Instruction.ImmRegOp.cmp, 1, b.register));
+			instructions.add(new Instruction.ImmReg(Instruction.ImmRegOp.cmp, 1, res.register));
 			instructions.add(new Instruction.Addr(Instruction.AddrOp.jz, falseLabel));
 		}
 		//--------------
-		freeLocations(context, lhsRegister, rhsRegister, b);
+		freeLocations(context, lhsRegister, rhsRegister, res);
 		//--------------
 	}
 	
@@ -913,7 +936,7 @@ public class X86FileWriter {
 		translate(e.getRhs(), tmps[1], context);
 		//
 		// Perform a bitwise comparison of the two data chunks
-		System.out.println(e.getLhs());
+//		System.out.println(e.getLhs());
 		if (e.getOp() == Expr.BOp.EQ) {
 			bitwiseEquality(tmps[0], tmps[1], falseLabel, context);
 		} else {
@@ -966,6 +989,8 @@ public class X86FileWriter {
 			translate((Expr.Variable) expression, target, context);
 		} else if (expression instanceof Expr.ArrayInitialiser){
 			translate((Expr.ArrayInitialiser) expression, target, context);
+		} else if (expression instanceof Expr.ArrayGenerator){
+			translate((Expr.ArrayGenerator) expression, target, context);
 		} else if (expression instanceof Expr.IndexOf){
 			translate ((Expr.IndexOf) expression, target, context);
 		}
@@ -1141,6 +1166,7 @@ public class X86FileWriter {
 	}
 
 	public void translateConstant(Object value, Location target, Context context) {
+//		System.out.println(value);
 		List<Instruction> instructions = context.instructions();
 		if (value instanceof HashMap) {
 			HashMap<String, Object> record = (HashMap<String, Object>) value;
@@ -1195,6 +1221,30 @@ public class X86FileWriter {
 					constants.add(new Constant.String(label, i));
 				}
 				instructions.add(new Instruction.AddrRegReg(Instruction.AddrRegRegOp.lea, label, HIP, tmp.register));
+//			} 
+//			else if(value instanceof ArrayList) {
+////				System.out.println("Hi");
+////				for (Object o : (ArrayList)value){
+////					System.out.println(o);
+////				}
+//				List<Constant> constants = context.constants();
+//				ArrayList l = (ArrayList) value;
+//				String label = null;
+//				
+//				String s = "";
+//				for (Object o : l){
+//					if (o instanceof Integer){
+//						s += o;
+//					}
+//				}
+//								
+//				if (label == null) {
+//					// We didn't find a match, so allocate a new string constant
+//					label = "arr" + constants.size();
+//					constants.add(new Constant.String(label, s));
+//				}
+//				instructions.add(new Instruction.AddrRegReg(Instruction.AddrRegRegOp.lea, label, HIP, tmp.register));
+			
 			} else {
 				throw new IllegalArgumentException("Unknown constant encountered: " + value);
 			}
@@ -1409,6 +1459,42 @@ public class X86FileWriter {
 		}
 	}
 
+	public void translate(Expr.ArrayGenerator e, Location target, Context context) {
+		/**
+		 * Initial Variables
+		 ***/
+		List<Instruction> instructions = context.instructions();
+		Type.Array type = (Type.Array) unwrap(e.attribute(Attribute.Type.class).type);
+		
+		/**
+		 * An appropriate amount of memory needs to be allocated
+		 ***/
+
+		RegisterLocation size = context.selectFreeRegister(type);
+		translate(e.getSize(), size, context);
+		context = context.lockLocation(size);
+
+		RegisterLocation alloc = context.selectFreeRegister(type);
+		bitwiseCopy(size, alloc, context);
+		instructions.add(new Instruction.Reg(Instruction.RegOp.inc, alloc.register));
+		instructions.add(new Instruction.ImmReg(Instruction.ImmRegOp.imul, 8, alloc.register));	
+		allocateSpaceOnHeap(alloc.register, context);
+		context = context.lockLocation(alloc);
+		
+		bitwiseCopy(alloc, target, context);
+		
+		instructions.add(new Instruction.RegImmInd(Instruction.RegImmIndOp.mov, size.register, 0, alloc.register));
+		
+		RegisterLocation val = context.selectFreeRegister(type);
+		translate(e.getValue(), val, context);
+		context = context.lockLocation(val);
+		
+		instructions.add(new Instruction.ImmReg(Instruction.ImmRegOp.add, 8, alloc.register));
+		makeExternalMethodCall("intnfill", context, null, alloc.register, size.register, val.register);
+
+
+	}
+	
 	public void translate(Expr.ArrayInitialiser e, Location target, Context context) {
 		/**
 		 * Initial Variables
@@ -1425,8 +1511,6 @@ public class X86FileWriter {
 		allocateSpaceOnHeap(r.register, context);
 		context = context.lockLocation(r);
 		
-		//
-//		instructions.add(new Instruction.RegImmInd(Instruction.RegImmIndOp.mov, r.register, target.offset, target.base));
 		bitwiseCopy(r, target, context);
 		RegisterLocation loc = context.selectFreeRegister(type);
 		context = context.lockLocation(loc);
@@ -1480,11 +1564,35 @@ public class X86FileWriter {
 		// compound values. For the former, we load their value directly into
 		// the target register. For the latter, we load a pointer to their value
 		// directly into the target register.
-
 		// Determine the offset within the stack of this local variable.
-		MemoryLocation loc = context.getVariableLocation(e.getName());
-		// Copy data from variable location into target location.
-		bitwiseCopy(loc, target, context);
+		List<Instruction> instructions = context.instructions();
+		Type type = unwrap(e.attribute(Attribute.Type.class).type);
+		
+		if(type instanceof Type.Array){
+			RegisterLocation org = (RegisterLocation) allocateLocation(e, context);
+			MemoryLocation mem = context.getVariableLocation(e.getName());
+			bitwiseCopy(mem, org, context);
+			context = context.lockLocation(org);
+			
+			RegisterLocation size = context.selectFreeRegister(type);
+			instructions.add(new Instruction.ImmIndReg(Instruction.ImmIndRegOp.mov, 0, org.register, size.register));
+			instructions.add(new Instruction.Reg(Instruction.RegOp.inc, size.register));
+			context = context.lockLocation(size);
+			
+			RegisterLocation clone = context.selectFreeRegister(type);
+			bitwiseCopy(size, clone, context);
+			instructions.add(new Instruction.ImmReg(Instruction.ImmRegOp.imul, 8, clone.register));	
+			allocateSpaceOnHeap(clone.register, context);
+			context = context.lockLocation(clone);
+			
+			makeExternalMethodCall("intncpy", context, null, clone.register, org.register, size.register);
+
+			bitwiseCopy(clone, target, context);
+			
+		} else {
+			MemoryLocation loc = context.getVariableLocation(e.getName());
+			bitwiseCopy(loc, target, context);
+		}
 	}
 
 	// ==========================================
