@@ -3,9 +3,10 @@ int f(int[] x) {
 }
 
 void main() {
+	 // print f([5,5]);
      assert f([]) == 0;
-     assert f([1]) == 1;
-     assert f([1,2]) == 2;
-     assert f([1,2,3]) == 3;
-     assert f([1,2,3,4]) == 4;     
+     assert f([5]) == 1;
+     assert f([5,5]) == 2;
+     assert f([5,5,5]) == 3;
+     assert f([5,5,5,5]) == 4;     
 }

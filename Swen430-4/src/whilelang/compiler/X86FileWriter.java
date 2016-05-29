@@ -497,7 +497,6 @@ public class X86FileWriter {
 		// Determine type of expression so as to determine appropriate print
 		// call.
 		
-		System.out.println(statement.getExpr());
 		Type type = unwrap(statement.getExpr().attribute(Attribute.Type.class).type);
 		String name;
 		if (type instanceof Type.Bool) {
@@ -891,7 +890,8 @@ public class X86FileWriter {
 	 * @param target
 	 *            Location to store result in.
 	 */
-	public void translate(Expr expression, Location target, Context context) {
+	public void translate(Expr expression, Location target, Context context) {	
+//		System.out.println(expression + " " + target);
 		if (expression instanceof Expr.Binary) {
 			if (target instanceof RegisterLocation) {
 				translate((Expr.Binary) expression, (RegisterLocation) target, context);
@@ -914,7 +914,10 @@ public class X86FileWriter {
 			}
 		} else if (expression instanceof Expr.Variable) {
 			translate((Expr.Variable) expression, target, context);
-		} else {
+		} else if (expression instanceof Expr.ArrayInitialiser){
+			translate((Expr.ArrayInitialiser) expression, (MemoryLocation) target, context);
+		} 
+		else {
 			throw new IllegalArgumentException("Unknown expression encountered: " + expression);
 		}
 	}
@@ -1317,8 +1320,72 @@ public class X86FileWriter {
 	}
 
 	public void translate(Expr.ArrayInitialiser e, MemoryLocation target, Context context) {
+		List<Instruction> instructions = context.instructions();
+		/**
+		 * Print
+		 ***/
+		System.out.println("ArrayInitialiser");		
+		System.out.println("Length: " + e.getArguments().size());
+		
+		Type.Array type = (Type.Array) unwrap(e.attribute(Attribute.Type.class).type);
+		
+		/**
+		 * An appropriate amount of memory needs to be allocated
+		 ***/
+		
+		int space = 8 + (8 * e.getArguments().size());
+		RegisterLocation r = context.selectFreeRegister(type);
+		instructions.add(new Instruction.ImmReg(Instruction.ImmRegOp.mov, space, r.register));
+		allocateSpaceOnHeap(r.register, context);
+		instructions.add(new Instruction.RegImmInd(Instruction.RegImmIndOp.mov, r.register, target.offset, target.base));
+		
+		RegisterLocation loc = context.selectFreeRegister(type);
+//		context = context.lockLocation(loc);
+		
+		int offset = 0;
+		instructions.add(new Instruction.ImmReg(Instruction.ImmRegOp.mov, e.getArguments().size(), loc.register));
+		instructions.add(new Instruction.RegImmInd(Instruction.RegImmIndOp.mov, loc.register, target.offset + offset, target.base));
 
-		System.out.println("ArrayInitialiser");
+//		MemoryLocation m = new MemoryLocation(type, target.base, 8);
+//		off
+		
+		for (Expr a: e.getArguments()){
+			offset += 8;
+//			MemoryLocation m = new MemoryLocation(type, target.base, target.offset + offset);
+
+			
+			
+//			offset+=24;
+//			translate(a, m, context);
+			
+			
+//			instructions.add(new Instruction.ImmReg(Instruction.ImmRegOp.mov, e.getArguments().size(), loc.register));
+
+			
+//			instructions.add(new Instruction.RegImmInd(Instruction.RegImmIndOp.mov, m.base, target.offset + offset, target.base));
+
+//			instructions.add(new Instruction.ImmReg(Instruction.ImmRegOp.mov, a, loc.register));
+//			instructions.add(new Instruction.RegImmInd(Instruction.RegImmIndOp.mov, loc.register, target.offset+offset, target.base));
+
+//			translate(a, loc, context);
+//			translate(a, target, context);
+//			instructions.add(new Instruction.RegImmInd(Instruction.RegImmIndOp.mov, loc.register, target.offset+offset, loc.register));
+//			instructions.add(new Instruction.RegImmInd(Instruction.RegImmIndOp.mov, loc.register, target.offset+offset, target.base));
+//			offset += 8;
+		}
+		
+//		freeLocations(context, loc);
+		
+		
+//			bitwiseCopy(r, mem, context);
+//		
+//		MemoryLocation m = new MemoryLocation(type, r.register, 0);
+//		
+//		}	
+//		
+		
+		
+		
 		
 //		// Create space on the stack for the resulting record
 //		Type.Record type = (Type.Record) unwrap(e.attribute(Attribute.Type.class).type);
@@ -1354,6 +1421,8 @@ public class X86FileWriter {
 		case NEG:
 			instructions.add(new Instruction.Reg(Instruction.RegOp.neg, target.register));
 			break;
+		case LENGTHOF:
+			break;
 		default:
 			throw new IllegalArgumentException("Unknown unary operator: " + e);
 		}
@@ -1367,7 +1436,6 @@ public class X86FileWriter {
 
 		// Determine the offset within the stack of this local variable.
 		MemoryLocation loc = context.getVariableLocation(e.getName());
-
 		// Copy data from variable location into target location.
 		bitwiseCopy(loc, target, context);
 	}
@@ -1786,7 +1854,7 @@ public class X86FileWriter {
 	 *            and, on return, will hold a pointer to the heap allocated
 	 *            data.
 	 */
-	//hey
+	
 	public void allocateSpaceOnHeap(Register target, Context context) {
 		makeExternalMethodCall("malloc", context, target, target);
 	}
