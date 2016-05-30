@@ -8,15 +8,17 @@ wl_sum1:
 	movq %rax, 0(%rsp)
 	movq 32(%rbp), %rax
 	movq %rax, 8(%rsp)
-	movq 0(%rsp), %rax
+	movq %rsp, %rax
 	addq $16, %rsp
+	movq 0(%rax), %rax
 	subq $16, %rsp
 	movq 24(%rbp), %rbx
 	movq %rbx, 0(%rsp)
 	movq 32(%rbp), %rbx
 	movq %rbx, 8(%rsp)
-	movq 8(%rsp), %rbx
+	movq %rsp, %rbx
 	addq $16, %rsp
+	movq 8(%rbx), %rbx
 	addq %rbx, %rax
 	movq %rax, 16(%rbp)
 	jmp label468
@@ -32,8 +34,9 @@ wl_sum2:
 	movq %rax, 0(%rsp)
 	movq 32(%rbp), %rax
 	movq %rax, 8(%rsp)
-	movq 0(%rsp), %rax
+	movq %rsp, %rax
 	addq $16, %rsp
+	movq 0(%rax), %rax
 	cmpq $0, %rax
 	jz label470
 	subq $16, %rsp
@@ -41,8 +44,9 @@ wl_sum2:
 	movq %rax, 0(%rsp)
 	movq 32(%rbp), %rax
 	movq %rax, 8(%rsp)
-	movq 8(%rsp), %rax
+	movq %rsp, %rax
 	addq $16, %rsp
+	movq 8(%rax), %rax
 	cmpq $0, %rax
 	jz label470
 	movq $1, %rax

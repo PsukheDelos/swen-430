@@ -8,8 +8,8 @@ import java.util.Map;
 import java.util.Stack;
 
 import jx86.lang.*;
-import jx86.lang.Constant.Quad;
 import whilelang.ast.*;
+import whilelang.ast.Expr.BOp;
 import whilelang.util.*;
 
 public class X86FileWriter {
@@ -388,7 +388,8 @@ public class X86FileWriter {
 			/**
 			 * load the address of the field being assigned to into a register.
 			 ***/
-			MemoryLocation loc = context.getVariableLocation(((Expr.Variable) e.getSource()).getName());
+			String v = e.toString().substring(0, e.toString().indexOf("."));
+			MemoryLocation loc = context.getVariableLocation(v);
 			
 			Type.Record type = (Type.Record) unwrap(e.getSource().attribute(Attribute.Type.class).type);			
 	
@@ -936,7 +937,6 @@ public class X86FileWriter {
 		translate(e.getRhs(), tmps[1], context);
 		//
 		// Perform a bitwise comparison of the two data chunks
-//		System.out.println(e.getLhs());
 		if (e.getOp() == Expr.BOp.EQ) {
 			bitwiseEquality(tmps[0], tmps[1], falseLabel, context);
 		} else {
@@ -1161,12 +1161,10 @@ public class X86FileWriter {
 	}
 
 	public void translate(Expr.Constant e, Location target, Context context) {
-//		System.out.println(e.getValue());
 		translateConstant(e.getValue(), target, context);
 	}
 
 	public void translateConstant(Object value, Location target, Context context) {
-//		System.out.println(value);
 		List<Instruction> instructions = context.instructions();
 		if (value instanceof HashMap) {
 			HashMap<String, Object> record = (HashMap<String, Object>) value;
@@ -1221,31 +1219,31 @@ public class X86FileWriter {
 					constants.add(new Constant.String(label, i));
 				}
 				instructions.add(new Instruction.AddrRegReg(Instruction.AddrRegRegOp.lea, label, HIP, tmp.register));
-//			} 
+			} 
 //			else if(value instanceof ArrayList) {
-////				System.out.println("Hi");
-////				for (Object o : (ArrayList)value){
-////					System.out.println(o);
-////				}
-//				List<Constant> constants = context.constants();
-//				ArrayList l = (ArrayList) value;
-//				String label = null;
+//				/**
+//				 * Initialise
+//				 ***/
+//				ArrayList list = (ArrayList) value;
+//				Type.Int type = new Type.Int();
+//				ArrayList<Expr> l = new ArrayList<Expr>();
 //				
-//				String s = "";
-//				for (Object o : l){
-//					if (o instanceof Integer){
-//						s += o;
-//					}
+//				/**
+//				 * Iterate through all objects and add them into an arrya list of expressions as Constants 
+//				 ***/
+//				for(Object o: list){
+//					Expr.Constant c = new Expr.Constant(o, new Attribute.Type(type));
+//					c.attributes().add(new Attribute.Type(type));
+//					l.add(c);
 //				}
-//								
-//				if (label == null) {
-//					// We didn't find a match, so allocate a new string constant
-//					label = "arr" + constants.size();
-//					constants.add(new Constant.String(label, s));
-//				}
-//				instructions.add(new Instruction.AddrRegReg(Instruction.AddrRegRegOp.lea, label, HIP, tmp.register));
-			
-			} else {
+//				
+//				/**
+//				 * Create an Array Initialiser and translate 
+//				 ***/
+//				Expr.ArrayInitialiser ai = new Expr.ArrayInitialiser(l,new Attribute.Type(new Type.Array(new Type.Int())));
+//				translate(ai, tmp, context);	
+//			} 
+			else {
 				throw new IllegalArgumentException("Unknown constant encountered: " + value);
 			}
 			// Copy from tmp to target. If they are the same, this will be a
@@ -1378,20 +1376,32 @@ public class X86FileWriter {
 	}
 	
 	public void translate(Expr.RecordAccess e, Location target, Context context) {
-//		System.out.println("ra");
 		// Determine the field offset
-		Type.Record type = (Type.Record) unwrap(e.getSource().attribute(Attribute.Type.class).type);
+		Type.Record type = (Type.Record) unwrap(e.getSource().attribute(Attribute.Type.class).type);//David's code
 		int offset = getFieldOffset(type, e.getName());
+		
 		// Translate source expression into a temporary stack location. This is
 		// unfortunately a little inefficient in some cases, as we could
 		// potentially avoid all memory usage. But, it will do for now!
-		MemoryLocation recordLocation = (MemoryLocation) allocateLocation(e.getSource(), context);
+		// Note that 'llocateLocation' modifies the stack pointer so it invalidates
+		// 'target' if target is stack relative.
+		MemoryLocation recordLocation = (MemoryLocation)allocateLocation(e.getSource(), context);
 		translate(e.getSource(), recordLocation, context);
-		// Finally, copy bits into target location
-		MemoryLocation fieldLocation = new MemoryLocation(target.type(), recordLocation.base, offset);
-		bitwiseCopy(fieldLocation, target, context);
-		//
+		
+		// get the absolute (i.e. non stack-relative) location of the record then 
+		// free the location reserved for the record.
+		// 'recordBase' now points beyond the end of the stack to the record but 
+		// the stack is as it was when we entered the function, so if 'target' is
+		// stack-relative then it becomes correct again.
+		RegisterLocation recordBase = context.selectFreeRegister(new Type.Int());
+		bitwiseCopy(new RegisterLocation(new Type.Int(), recordLocation.base), recordBase, context);
+		context = context.lockLocation(recordBase);
 		freeLocations(context, recordLocation);
+
+		// Finally, copy bits into target location
+		MemoryLocation fieldLocation = new MemoryLocation(target.type(), recordBase.register, recordLocation.offset + offset);
+		bitwiseCopy(fieldLocation, target, context);
+		context = context.unlockLocation(recordBase);
 	}
 
 	/**
@@ -1499,6 +1509,7 @@ public class X86FileWriter {
 		/**
 		 * Initial Variables
 		 ***/
+		
 		List<Instruction> instructions = context.instructions();
 		Type.Array type = (Type.Array) unwrap(e.attribute(Attribute.Type.class).type);
 		

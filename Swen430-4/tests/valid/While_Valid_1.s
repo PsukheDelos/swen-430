@@ -62,11 +62,11 @@ wl_reverse:
 	movq 16(%rsp), %rcx
 	addq $32, %rsp
 	movq %rcx, -8(%rbp)
-label1004:
+label1009:
 	movq -16(%rbp), %rax
 	movq $0, %rbx
 	cmpq %rbx, %rax
-	jle label1005
+	jle label1010
 	movq -16(%rbp), %rax
 	movq $1, %rbx
 	subq %rbx, %rax
@@ -142,8 +142,8 @@ label1004:
 	movq $1, %rbx
 	addq %rbx, %rax
 	movq %rax, -24(%rbp)
-	jmp label1004
-label1005:
+	jmp label1009
+label1010:
 	movq -8(%rbp), %rax
 	movq 0(%rax), %rbx
 	incq %rbx
@@ -171,8 +171,8 @@ label1005:
 	movq 16(%rsp), %rcx
 	addq $32, %rsp
 	movq %rcx, 16(%rbp)
-	jmp label1003
-label1003:
+	jmp label1008
+label1008:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
@@ -236,15 +236,15 @@ wl_main:
 	movq 16(%rsp), %rcx
 	addq $32, %rsp
 	cmpq $0, %rdx
-	jz label1007
+	jz label1012
 	movq $1, %rax
-	jmp label1008
-label1007:
+	jmp label1013
+label1012:
 	movq $0, %rax
-label1008:
+label1013:
 	movq %rax, %rdi
 	call _assertion
-label1006:
+label1011:
 	movq %rbp, %rsp
 	popq %rbp
 	ret

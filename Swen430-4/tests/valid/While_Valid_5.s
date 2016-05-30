@@ -33,11 +33,11 @@ wl_trim:
 	movq 8(%rsp), %rbx
 	movq 16(%rsp), %rcx
 	addq $32, %rsp
-label1041:
+label1046:
 	movq -16(%rbp), %rax
 	movq 24(%rbp), %rbx
 	cmpq %rbx, %rax
-	jge label1042
+	jge label1047
 	movq -16(%rbp), %rax
 	incq %rax
 	movq 32(%rbp), %rbx
@@ -75,10 +75,10 @@ label1041:
 	movq %rcx, %rax
 	movq 24(%rbp), %rbx
 	cmpq %rax, %rbx
-	jnz label1043
-	jmp label1042
-	jmp label1043
-label1043:
+	jnz label1048
+	jmp label1047
+	jmp label1048
+label1048:
 	movq -8(%rbp), %rax
 	movq 0(%rax), %rbx
 	incq %rbx
@@ -150,8 +150,8 @@ label1043:
 	movq $1, %rbx
 	addq %rbx, %rax
 	movq %rax, -16(%rbp)
-	jmp label1041
-label1042:
+	jmp label1046
+label1047:
 	movq -8(%rbp), %rax
 	movq 0(%rax), %rbx
 	incq %rbx
@@ -179,8 +179,8 @@ label1042:
 	movq 16(%rsp), %rcx
 	addq $32, %rsp
 	movq %rcx, 16(%rbp)
-	jmp label1040
-label1040:
+	jmp label1045
+label1045:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
@@ -236,12 +236,12 @@ wl_main:
 	movq 16(%rsp), %rcx
 	addq $32, %rsp
 	cmpq $0, %rdx
-	jz label1045
+	jz label1050
 	movq $1, %rax
-	jmp label1046
-label1045:
+	jmp label1051
+label1050:
 	movq $0, %rax
-label1046:
+label1051:
 	movq %rax, %rdi
 	call _assertion
 	subq $32, %rsp
@@ -293,15 +293,15 @@ label1046:
 	movq 16(%rsp), %rcx
 	addq $32, %rsp
 	cmpq $0, %rdx
-	jz label1047
+	jz label1052
 	movq $1, %rax
-	jmp label1048
-label1047:
+	jmp label1053
+label1052:
 	movq $0, %rax
-label1048:
+label1053:
 	movq %rax, %rdi
 	call _assertion
-label1044:
+label1049:
 	movq %rbp, %rsp
 	popq %rbp
 	ret

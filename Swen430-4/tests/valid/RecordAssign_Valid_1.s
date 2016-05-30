@@ -53,8 +53,9 @@ label480:
 	movq %rax, 0(%rsp)
 	movq -8(%rbp), %rax
 	movq %rax, 8(%rsp)
-	movq 8(%rsp), %rax
+	movq %rsp, %rax
 	addq $16, %rsp
+	movq 8(%rax), %rax
 	movq $2, %rbx
 	subq %rbx, %rax
 	movq %rax, -16(%rbp)

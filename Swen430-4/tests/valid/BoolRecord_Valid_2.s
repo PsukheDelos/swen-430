@@ -13,8 +13,9 @@ wl_main:
 	movq %rax, 0(%rsp)
 	movq -8(%rbp), %rax
 	movq %rax, 8(%rsp)
-	movq 0(%rsp), %rax
+	movq %rsp, %rax
 	addq $16, %rsp
+	movq 0(%rax), %rax
 	cmpq $0, %rax
 	jz label189
 	movq $1, %rax

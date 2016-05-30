@@ -6,26 +6,26 @@ wl_f:
 	movq 24(%rbp), %rax
 	movq $0, %rbx
 	cmpq %rax, %rbx
-	jnz label715
-label713:
+	jnz label720
+label718:
 	leaq str0(%rip), %rbx
 	movq %rbx, 16(%rbp)
-	jmp label711
-	jmp label714
-label715:
+	jmp label716
+	jmp label719
+label720:
 	movq $1, %rbx
 	cmpq %rax, %rbx
-	jnz label717
-label714:
-	jmp label716
-label717:
-label716:
+	jnz label722
+label719:
+	jmp label721
+label722:
+label721:
 	leaq str1(%rip), %rbx
 	movq %rbx, 16(%rbp)
-	jmp label711
-label719:
-label712:
-label711:
+	jmp label716
+label724:
+label717:
+label716:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
@@ -44,12 +44,12 @@ wl_main:
 	addq $16, %rsp
 	movq -32(%rsp), %rbx
 	cmpq %rax, %rbx
-	jnz label722
+	jnz label727
 	movq $1, %rax
-	jmp label723
-label722:
+	jmp label728
+label727:
 	movq $0, %rax
-label723:
+label728:
 	movq %rax, %rdi
 	call _assertion
 	leaq str1(%rip), %rax
@@ -64,12 +64,12 @@ label723:
 	addq $16, %rsp
 	movq -32(%rsp), %rbx
 	cmpq %rax, %rbx
-	jnz label724
+	jnz label729
 	movq $1, %rax
-	jmp label725
-label724:
+	jmp label730
+label729:
 	movq $0, %rax
-label725:
+label730:
 	movq %rax, %rdi
 	call _assertion
 	leaq str1(%rip), %rax
@@ -84,15 +84,15 @@ label725:
 	addq $16, %rsp
 	movq -32(%rsp), %rbx
 	cmpq %rax, %rbx
-	jnz label726
+	jnz label731
 	movq $1, %rax
-	jmp label727
-label726:
+	jmp label732
+label731:
 	movq $0, %rax
-label727:
+label732:
 	movq %rax, %rdi
 	call _assertion
-label721:
+label726:
 	movq %rbp, %rsp
 	popq %rbp
 	ret
